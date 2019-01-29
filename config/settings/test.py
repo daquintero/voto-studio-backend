@@ -64,8 +64,8 @@ DATABASES = {
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'HOST': env('DJANGO_DATABASE_HOST'),
+        'PORT': env('DJANGO_DATABASE_PORT'),
         'TEST': {
             'NAME': 'default',
             'DEPENDENCIES': ['main_site'],
@@ -80,8 +80,8 @@ DATABASES = {
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
+        'HOST': env('DJANGO_DATABASE_HOST'),
+        'PORT': env('DJANGO_DATABASE_PORT'),
         'TEST': {
             'NAME': 'main_site',
             'DEPENDENCIES': [],
