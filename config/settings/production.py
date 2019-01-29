@@ -81,6 +81,7 @@ AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': f'max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate',
 }
 AWS_AUTO_CREATE_BUCKET = True
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 
 # STATIC
 # ------------------------
@@ -141,7 +142,6 @@ INSTALLED_APPS += ['gunicorn']  # noqa F405
 # WhiteNoise
 # ------------------------------------------------------------------------------
 # http://whitenoise.evans.io/en/latest/django.html#enable-whitenoise
-INSTALLED_APPS.insert(0, 'whitenoise.runserver_nostatic')
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')  # noqa F405
 
 # raven
