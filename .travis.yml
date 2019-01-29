@@ -28,7 +28,7 @@ before_script:
 - psql -c "CREATE SCHEMA main_site;" -U postgres
 - sleep 10
 script:
-- pytest -s -v --create-db
+- pytest
 - python manage.py migrate_both
 #deploy:
 #  provider: heroku
