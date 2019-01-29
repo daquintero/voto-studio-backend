@@ -29,7 +29,7 @@ before_script:
 - sleep 10
 script:
 - python manage.py migrate_both
-- pytest -c pytest.travis.ini -s -v
+- pytest -s -v
 #deploy:
 #  provider: heroku
 #  api_key:
