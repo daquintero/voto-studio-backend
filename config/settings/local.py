@@ -5,6 +5,7 @@ from .base import env
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = True
+TESTING = False
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='bTQAYpxY4cfIIJbe4lJtoOdPgScrFJCWIqcSndXL5qd0OcsDvvDKIbYNTe7NTgDa')
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
@@ -60,5 +61,43 @@ INTERNAL_IPS = ['127.0.0.1', '10.0.2.2']
 # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
 INSTALLED_APPS += ['django_extensions']  # noqa F405
 
-# Your stuff...
 # ------------------------------------------------------------------------------
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'options': '-c search_path=django,public',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+        'TEST': {
+            'NAME': 'default',
+            'DEPENDENCIES': ['main_site'],
+        },
+        'ATOMIC_REQUESTS': True,
+    },
+    'main_site': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'options': '-c search_path=main_site,public',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+        'TEST': {
+            'NAME': 'main_site',
+            'DEPENDENCIES': [],
+        },
+        'ATOMIC_REQUESTS': True,
+    }
+}
+
+CORS_ORIGIN_WHITELIST = (
+    'localhost:3000',
+    'localhost:3001',
+)

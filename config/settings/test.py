@@ -1,5 +1,5 @@
 """
-With these settings, tests run faster.
+With these settings, testing run faster.
 """
 
 from .base import *  # noqa
@@ -9,10 +9,13 @@ from .base import env
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = False
+TESTING = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="VZxrZx5bCoZWbkjuDKzh0Hr8YBGByDbF2ZxBmaJbujMkM8NOBu8LNKSqRRF3zQ6u")
 # https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
+
+INSTALLED_APPS += ['shared.testing.test_app']
 
 # CACHES
 # ------------------------------------------------------------------------------
@@ -51,5 +54,41 @@ EMAIL_HOST = "localhost"
 # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
 EMAIL_PORT = 1025
 
-# Your stuff...
 # ------------------------------------------------------------------------------
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'options': '-c search_path=django,public',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+        'TEST': {
+            'NAME': 'default',
+            'DEPENDENCIES': ['main_site'],
+        },
+        'ATOMIC_REQUESTS': True,
+    },
+    'main_site': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'options': '-c search_path=main_site,public',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+        'TEST': {
+            'NAME': 'main_site',
+            'DEPENDENCIES': [],
+        },
+        'ATOMIC_REQUESTS': True,
+    }
+}
+
+WORKSHOP_MODELS += ('test_app.BasicModel', )
+MODELS_TO_INDEX += ('test_app.BasicModel', )
