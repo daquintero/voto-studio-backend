@@ -210,4 +210,5 @@ CORS_ORIGIN_WHITELIST = (
     'studio.votoinformado2019.com',
 )
 
+BASE_DIR = ROOT_DIR
 django_heroku.settings(locals())
