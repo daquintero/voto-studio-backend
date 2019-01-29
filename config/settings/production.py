@@ -1,4 +1,5 @@
 import logging
+import django_heroku
 
 from .base import *  # noqa
 from .base import env
@@ -8,13 +9,22 @@ from .base import env
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['votoinformado2019.com'])
+ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['api.votoinformado2019.com' 'votoinformado2019.com'])
+
+TESTING = False
 
 # DATABASES
 # ------------------------------------------------------------------------------
-DATABASES['default'] = env.db('DATABASE_URL')  # noqa F405
-DATABASES['default']['ATOMIC_REQUESTS'] = True  # noqa F405
-DATABASES['default']['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
+DATABASES = {}
+DATABASES[STUDIO_DB] = env.db('DATABASE_URL')  # noqa F405
+DATABASES[STUDIO_DB]['OPTIONS'] = {'options': '-c search_path=django,public'}
+DATABASES[STUDIO_DB]['ATOMIC_REQUESTS'] = True
+DATABASES[STUDIO_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
+
+DATABASES[MAIN_SITE_DB] = env.db('DATABASE_URL')  # noqa F405
+DATABASES[MAIN_SITE_DB]['OPTIONS'] = {'options': '-c search_path=main_site,public'}
+DATABASES[MAIN_SITE_DB]['ATOMIC_REQUESTS'] = True
+DATABASES[MAIN_SITE_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 
 # CACHES
 # ------------------------------------------------------------------------------
@@ -70,6 +80,7 @@ _AWS_EXPIRY = 60 * 60 * 24 * 7
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': f'max-age={_AWS_EXPIRY}, s-maxage={_AWS_EXPIRY}, must-revalidate',
 }
+AWS_AUTO_CREATE_BUCKET = True
 
 # STATIC
 # ------------------------
@@ -108,7 +119,7 @@ EMAIL_SUBJECT_PREFIX = env('DJANGO_EMAIL_SUBJECT_PREFIX', default='[voto-backend
 # ADMIN
 # ------------------------------------------------------------------------------
 # Django Admin URL regex.
-ADMIN_URL = env('DJANGO_ADMIN_URL')
+ADMIN_URL = env('DJANGO_ADMIN_URL', default='')
 
 # Anymail (Mailgun)
 # ------------------------------------------------------------------------------
@@ -117,8 +128,8 @@ INSTALLED_APPS += ['anymail']  # noqa F405
 EMAIL_BACKEND = 'anymail.backends.mailgun.EmailBackend'
 # https://anymail.readthedocs.io/en/stable/installation/#anymail-settings-reference
 ANYMAIL = {
-    'MAILGUN_API_KEY': env('MAILGUN_API_KEY'),
-    'MAILGUN_SENDER_DOMAIN': env('MAILGUN_DOMAIN')
+    'MAILGUN_API_KEY': env('MAILGUN_API_KEY', default=''),
+    'MAILGUN_SENDER_DOMAIN': env('MAILGUN_DOMAIN', default='')
 }
 
 # Gunicorn
@@ -192,5 +203,11 @@ SENTRY_CELERY_LOGLEVEL = env.int('DJANGO_SENTRY_LOG_LEVEL', logging.INFO)
 RAVEN_CONFIG = {
     'dsn': SENTRY_DSN
 }
-# Your stuff...
+
 # ------------------------------------------------------------------------------
+CORS_ORIGIN_WHITELIST = (
+    'votoinformado2019.com',
+    'studio.votoinformado2019.com',
+)
+
+django_heroku.settings(locals())
