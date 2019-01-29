@@ -315,9 +315,8 @@ class ChangeGroupManager(models.Manager):
 
         if not changes.count():
             return {'published': False, 'message': 'No changes made since last publish.'}
-
         changes_committed = [change.commit() for change in changes]
-        print([p.id for p in changes_committed])
+
         description = f'{str(request.user)} published <{instance._meta.model_name}> instance {str(instance)}'
         change_group = self.model(
             description=description,
