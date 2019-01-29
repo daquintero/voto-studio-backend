@@ -28,7 +28,7 @@ before_script:
 - psql -c "CREATE SCHEMA main_site;" -U postgres
 - sleep 10
 script:
-- pytest
+- pytest -c pytest.travis.ini
 - python manage.py migrate_both
 #deploy:
 #  provider: heroku
