@@ -85,6 +85,8 @@ AWS_AUTO_CREATE_BUCKET = True
 # STATIC
 # ------------------------
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_HOST = env('CLOUDFRONT_URL')
+STATIC_URL = STATIC_HOST + '/static/'
 
 # MEDIA
 # ------------------------------------------------------------------------------
@@ -139,6 +141,7 @@ INSTALLED_APPS += ['gunicorn']  # noqa F405
 # WhiteNoise
 # ------------------------------------------------------------------------------
 # http://whitenoise.evans.io/en/latest/django.html#enable-whitenoise
+INSTALLED_APPS.insert(0, 'whitenoise.runserver_nostatic')
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')  # noqa F405
 
 # raven
