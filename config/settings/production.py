@@ -85,8 +85,7 @@ AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 # STATIC
 # ------------------------
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-STATIC_HOST = env('CLOUDFRONT_URL', default='')
+STATIC_HOST = env('CLOUDFRONT_URL')
 STATIC_URL = STATIC_HOST + '/static/'
 
 # MEDIA
@@ -122,7 +121,7 @@ EMAIL_SUBJECT_PREFIX = env('DJANGO_EMAIL_SUBJECT_PREFIX', default='[voto-backend
 # ADMIN
 # ------------------------------------------------------------------------------
 # Django Admin URL regex.
-ADMIN_URL = env('DJANGO_ADMIN_URL', default='')
+ADMIN_URL = env('DJANGO_ADMIN_URL', default='/admin/')
 
 # Anymail (Mailgun)
 # ------------------------------------------------------------------------------
@@ -152,7 +151,7 @@ MIDDLEWARE = ['raven.contrib.django.raven_compat.middleware.SentryResponseErrorI
 
 # Sentry
 # ------------------------------------------------------------------------------
-SENTRY_DSN = env('SENTRY_DSN', default='')
+SENTRY_DSN = env('SENTRY_DSN')
 SENTRY_CLIENT = env('DJANGO_SENTRY_CLIENT', default='raven.contrib.django.raven_compat.DjangoClient')
 LOGGING = {
     'version': 1,
