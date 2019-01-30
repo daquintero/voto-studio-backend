@@ -8,9 +8,9 @@ ROOT_DIR = environ.Path(__file__) - 3  # (voto_backend/config/settings/base.py -
 APPS_DIR = ROOT_DIR.path('voto_backend')
 env = environ.Env()
 
-READ_DOT_ENV_FILE = True  # env.bool('DJANGO_READ_DOT_ENV_FILE', default=False)
+READ_DOT_ENV_FILE = env.bool('DJANGO_READ_DOT_ENV_FILE', default=False)
 if READ_DOT_ENV_FILE:
-    env.read_env(str(ROOT_DIR.path(env('DJANGO_DOT_ENV_FILE_PATHf', default='.env.staging'))))
+    env.read_env(str(ROOT_DIR.path(env('DJANGO_DOT_ENV_FILE_PATH', default='.env.staging'))))
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -31,10 +31,6 @@ USE_I18N = True
 USE_L10N = True
 # https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
 USE_TZ = True
-
-# DATABASES
-# ------------------------------------------------------------------------------
-# https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
 # URLS
 # ------------------------------------------------------------------------------
