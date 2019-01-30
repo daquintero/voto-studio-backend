@@ -15,6 +15,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
+# https://docs.djangoproject.com/en/dev/ref/settings/#static-url
+STATIC_URL = '/static/'
+
 # CACHES
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
