@@ -10,7 +10,6 @@ from .base import env
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = env.list('DJANGO_ALLOWED_HOSTS', default=['api.votoinformado2019.com' 'votoinformado2019.com'])
-
 TESTING = False
 
 # DATABASES
@@ -31,7 +30,7 @@ DATABASES[MAIN_SITE_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  #
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': env('REDIS_URL'),
+        'LOCATION': env('REDIS_URL', default=''),
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             # Mimicing memcache behavior.
@@ -86,7 +85,7 @@ AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 # STATIC
 # ------------------------
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-STATIC_HOST = env('CLOUDFRONT_URL')
+STATIC_HOST = env('CLOUDFRONT_URL', default='')
 STATIC_URL = STATIC_HOST + '/static/'
 
 # MEDIA
@@ -152,7 +151,7 @@ MIDDLEWARE = ['raven.contrib.django.raven_compat.middleware.SentryResponseErrorI
 
 # Sentry
 # ------------------------------------------------------------------------------
-SENTRY_DSN = env('SENTRY_DSN')
+SENTRY_DSN = env('SENTRY_DSN', default='')
 SENTRY_CLIENT = env('DJANGO_SENTRY_CLIENT', default='raven.contrib.django.raven_compat.DjangoClient')
 LOGGING = {
     'version': 1,
