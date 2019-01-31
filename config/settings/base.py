@@ -10,7 +10,7 @@ env = environ.Env()
 
 READ_DOT_ENV_FILE = env.bool('DJANGO_READ_DOT_ENV_FILE', default=False)
 if READ_DOT_ENV_FILE:
-    env.read_env(str(ROOT_DIR.path(env('DJANGO_DOT_ENV_FILE_PATH', default='.env.staging'))))
+    env.read_env(str(ROOT_DIR.path(env('DJANGO_DOT_ENV_FILE_PATH', default='.env.production'))))
 
 # GENERAL
 # ------------------------------------------------------------------------------
