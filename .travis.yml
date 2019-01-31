@@ -26,10 +26,10 @@ install:
 before_script:
 - psql -c "CREATE DATABASE travisci;" -U postgres
 - sleep 1
-- psql -c "CREATE SCHEMA main_site;" -U postgres
+- psql -c "CREATE SCHEMA main_site AUTHORIZATION postgres;" -U postgres
 - sleep 1
-- psql -c "GRANT USAGE ON SCHEMA main_site TO postgres;" -U postgres
-- psql -c "GRANT CREATE ON SCHEMA main_site TO postgres;" -U postgres
+- psql -c "GRANT ALL ON SCHEMA main_site TO PUBLIC;"
+- psql -c "GRANT ALL ON SCHEMA main_site TO postgres;"
 - sleep 10
 script:
 - python manage.py migrate_both
