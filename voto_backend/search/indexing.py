@@ -8,16 +8,22 @@ from elasticsearch_dsl.connections import create_connection
 from shared.utils import get_model
 from .utils import get_models_to_index, get_fields
 
-bonsai = settings.BONSAI_URL
-auth = re.search('https\:\/\/(.*)\@', bonsai).group(1).split(':')
-host = bonsai.replace('https://%s:%s@' % (auth[0], auth[1]), '')
 
-client = create_connection(
-    host=host,
-    port=443,
-    use_ssl=True,
-    http_auth=(auth[0], auth[1])
-)
+bonsai = settings.BONSAI_URL
+client = None
+if bonsai:
+    auth = re.search('https\:\/\/(.*)\@', bonsai).group(1).split(':')
+    host = bonsai.replace('https://%s:%s@' % (auth[0], auth[1]), '')
+
+    client = create_connection(
+        host=host,
+        port=443,
+        use_ssl=True,
+        http_auth=(auth[0], auth[1])
+    )
+else:
+    client = create_connection()
+
 
 FIELD_MAP = {
     'AutoField': Integer,
