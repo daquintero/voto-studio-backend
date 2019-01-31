@@ -45,7 +45,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'OPTIONS': {
-            'options': '-c search_path=studio',
+            'options': '-c search_path=public',
         },
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
@@ -67,8 +67,3 @@ DATABASES = {
         'ATOMIC_REQUESTS': True,
     }
 }
-
-CORS_ORIGIN_WHITELIST = (
-    'localhost:3000',
-    'localhost:3001',
-)
