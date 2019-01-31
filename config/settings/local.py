@@ -76,10 +76,6 @@ DATABASES = {
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'TEST': {
-            'NAME': 'default',
-            'DEPENDENCIES': ['main_site'],
-        },
         'ATOMIC_REQUESTS': True,
     },
     'main_site': {
@@ -92,10 +88,6 @@ DATABASES = {
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': '127.0.0.1',
         'PORT': '5432',
-        'TEST': {
-            'NAME': 'main_site',
-            'DEPENDENCIES': [],
-        },
         'ATOMIC_REQUESTS': True,
     }
 }

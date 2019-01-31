@@ -16,12 +16,12 @@ TESTING = False
 # ------------------------------------------------------------------------------
 DATABASES = {}
 DATABASES[STUDIO_DB] = env.db('DATABASE_URL')  # noqa F405
-DATABASES[STUDIO_DB]['OPTIONS'] = {'options': '-c search_path=django,public'}
+DATABASES[STUDIO_DB]['OPTIONS'] = {'options': '-c search_path=public'}
 DATABASES[STUDIO_DB]['ATOMIC_REQUESTS'] = True
 DATABASES[STUDIO_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 
 DATABASES[MAIN_SITE_DB] = env.db('DATABASE_URL')  # noqa F405
-DATABASES[MAIN_SITE_DB]['OPTIONS'] = {'options': '-c search_path=main_site,public'}
+DATABASES[MAIN_SITE_DB]['OPTIONS'] = {'options': '-c search_path=main_site'}
 DATABASES[MAIN_SITE_DB]['ATOMIC_REQUESTS'] = True
 DATABASES[MAIN_SITE_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 

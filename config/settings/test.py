@@ -59,7 +59,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'OPTIONS': {
-            'options': '-c search_path=django,public',
+            'options': '-c search_path=public',
         },
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),

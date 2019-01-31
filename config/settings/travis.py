@@ -45,33 +45,25 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'OPTIONS': {
-            'options': '-c search_path=django,public',
+            'options': '-c search_path=public',
         },
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': 'localhost',
         'PORT': '5433',
-        'TEST': {
-            'NAME': 'default',
-            'DEPENDENCIES': ['main_site'],
-        },
         'ATOMIC_REQUESTS': True,
     },
     'main_site': {
         'ENGINE': 'django.db.backends.postgresql',
         'OPTIONS': {
-            'options': '-c search_path=main_site,public',
+            'options': '-c search_path=main_site',
         },
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': 'localhost',
         'PORT': '5433',
-        'TEST': {
-            'NAME': 'main_site',
-            'DEPENDENCIES': [],
-        },
         'ATOMIC_REQUESTS': True,
     }
 }
