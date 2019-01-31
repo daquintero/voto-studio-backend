@@ -92,3 +92,5 @@ DATABASES = {
 
 WORKSHOP_MODELS += ('test_app.BasicModel', )
 MODELS_TO_INDEX += ('test_app.BasicModel', )
+
+BONSAI_URL = env('BONSAI_URL')
