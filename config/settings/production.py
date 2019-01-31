@@ -208,6 +208,7 @@ RAVEN_CONFIG = {
 
 # ------------------------------------------------------------------------------
 CORS_ORIGIN_WHITELIST = (
+    'voto-studio.surge.sh',
     'votoinformado2019.com',
     'studio.votoinformado2019.com',
 )
