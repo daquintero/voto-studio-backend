@@ -29,6 +29,7 @@ before_script:
 - sleep 10
 script:
 - python manage.py migrate --database=main_site
+- python manage.py migrate --database=default
 - pytest
 deploy:
   provider: heroku
