@@ -25,8 +25,10 @@ install:
 - pip install psycopg2 --quiet
 before_script:
 - psql -c "CREATE DATABASE travisci;" -U postgres
-- psql -c "CREATE SCHEMA main_site AUTHORIZATION postgres;" -U postgres
-- psql -c "GRANT CREATE ON SCHEMA main_site TO postgres;"
+- sleep 1
+- psql -c "CREATE SCHEMA main_site;" -U postgres
+- sleep 1
+- psql -c "GRANT CREATE ON SCHEMA main_site TO postgres;" -U postgres
 - sleep 10
 script:
 - python manage.py migrate_both
