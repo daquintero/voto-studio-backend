@@ -28,7 +28,7 @@ before_script:
 - psql -c "CREATE SCHEMA main_site AUTHORIZATION postgres;" -U postgres
 - sleep 10
 script:
-- python manage.py migrate_both
+- python manage.py migrate --database=main_site
 - pytest
 deploy:
   provider: heroku
