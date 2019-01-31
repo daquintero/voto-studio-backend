@@ -96,3 +96,5 @@ CORS_ORIGIN_WHITELIST = (
     'localhost:3000',
     'localhost:3001',
 )
+
+BONSAI_URL = env('BONSAI_URL')
