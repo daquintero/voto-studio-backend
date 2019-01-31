@@ -268,7 +268,7 @@ class TrackedModel(models.Model):
     If a model inherits from this then its changes will be tracked.
     """
     date_created = models.DateTimeField(_('Date of creation'), default=timezone.now)
-    tracked = models.BooleanField(_('Whether the instance is tracked'), default=True)
+    tracked = models.BooleanField(_('Tracked'), default=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
 
     objects = models.Manager()
