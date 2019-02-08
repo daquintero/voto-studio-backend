@@ -218,7 +218,7 @@ def get_options(instance, field, using=settings.STUDIO_DB):
         for instance in instances:
             if not hasattr(instance, model_class._meta.model_name.lower()):
                 label = f"ID: {instance.id} "
-                for descriptor in instance.table_values['descriptors']:
+                for descriptor in instance.get_table_values()['descriptors']:
                     label += f"{descriptor['name'].capitalize()}: {descriptor['value'].capitalize()} "
                 ret['options'].append({
                     'label': label, 'value': str(instance.id)
@@ -282,13 +282,15 @@ def get_fields(model=None, instance=None):
 
 
 def get_basic_fields(model=None, instance=None):
+    hidden_fields = model.hidden_fields if model else instance._meta.model.hidden_fields
     basic_fields = [
         f for f in get_fields(model=model, instance=instance)
         if not (
             f.get_internal_type() == 'ManyToManyField' or
             type(f) is OneToOneRel or
             type(f) is ManyToOneRel or
-            f.name in ('user', 'tracked', 'date_created')
+            f.name in hidden_fields or
+            f.get_internal_type() == 'JSONField'
         )
     ]
 
@@ -344,7 +346,7 @@ class BuildFormAPI(APIView):
             'default_checked': field.get_internal_type() == 'BooleanField' and getattr(instance, field.name, False),
             'read_only': is_read_only(field),
             **get_options(instance, field, using=using),
-        } for field in basic_fields if not field.get_internal_type() == 'JSONField']
+        } for field in basic_fields]
 
         related_fields = get_related_fields(model=model_class)
         related_fields_list = [{
@@ -488,7 +490,9 @@ class RelatedFieldsAPI(APIView):
         related_field_name = request.GET.get('rfn')
         related_field = parent_model_class._meta.get_field(related_field_name)
 
-        if parent_instance:
+        page_size = request.GET.get('page_size')
+
+        if parent_instance is not None:
             blacklist_ids = [o.id for o in get_field_value(parent_instance, field=related_field).all()]
             blacklist_ids.insert(0, parent_instance_id)
         else:
@@ -498,7 +502,7 @@ class RelatedFieldsAPI(APIView):
             must={'tracked': True},
             must_not={'id': blacklist_ids},
             using=using,
-            size=10,
+            size=page_size,
         )
 
         return Response(
@@ -512,7 +516,7 @@ class RelatedFieldsAPI(APIView):
         )
 
 
-class UpdateMediaFieldsAPI(APIView):
+class UpdateMediaFieldAPI(APIView):
     authentication_classes = (authentication.TokenAuthentication, )
 
     @staticmethod
@@ -602,7 +606,7 @@ class UpdateRelatedFieldAPI(APIView):
         related_app_label, related_model_name = request.data['related_model_label'].split('.')
         related_model_class = get_model(app_label=related_app_label, model_name=related_model_name)
         related_instances = related_model_class.objects.filter(id__in=request.data.get('related_ids'))
-
+        
         update_type = request.data['update_type']
         field_name = camel_to_underscore(request.data['field_name'])
         field_value = get_field_value(instance, field_name=field_name)

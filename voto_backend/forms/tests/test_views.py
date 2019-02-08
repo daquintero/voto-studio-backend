@@ -67,11 +67,11 @@ class ModuleLevelFunctionTests(ESTestCase):
     def test_get_related_instances(self):
         random.seed('ModuleLevelFunctionTests::test_get_related_instances')
 
-        self.assertEqual(views.get_related_instances(None, None), [])
+        self.assertEqual(views.get_related_instances(None, None), {'instances': [], 'table_heads': []})
 
         many_to_many_field = self.instance._meta.get_field('many_to_many_field')
 
-        self.assertFalse(views.get_related_instances(self.instance, many_to_many_field))
+        self.assertEqual(views.get_related_instances(self.instance, many_to_many_field)['instances'], [])
 
         related_instances = [create_instance(user=self.user) for _ in range(10)]
         # ElasticSearch is a "near-real-time (NRT)" search engine,
@@ -83,7 +83,7 @@ class ModuleLevelFunctionTests(ESTestCase):
         self.instance.many_to_many_field.set(random.sample(related_instances, k=sample_size))
         related_results = views.get_related_instances(self.instance, many_to_many_field)
 
-        self.assertEqual(len(related_results), sample_size)
+        self.assertEqual(len(related_results['instances']), sample_size)
 
     def test_get_options(self):
         basic_model_instances = [create_instance(user=self.user) for _ in range(10)]
@@ -223,7 +223,7 @@ class RelatedFieldsAPITests(ESTestCase):
         time.sleep(2)
 
     def test_get(self):
-        response = self.client.get(reverse('forms:related_fields'), {
+        response = self.client.get(reverse('forms:get_related_fields'), {
             # Parent model class info
             'pal': 'test_app',
             'pmn': 'basicmodel',
@@ -232,18 +232,20 @@ class RelatedFieldsAPITests(ESTestCase):
             'ral': 'test_app',
             'rmn': 'basicmodel',
             'rfn': 'many_to_many_field',
+            # Meta
+            'page_size': 100,
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['verbose_name'], BasicModel._meta.verbose_name)
-        self.assertEqual(len(response.data['related_field_options']), len(self.related_instances) + 1)
+        self.assertEqual(len(response.data['related_field_instances']), len(self.related_instances) + 1)
 
         random.seed('RelatedFieldsAPITests::test_get')
         num_related_instances = random.randint(1, len(self.related_instances))
         random_related_instances = random.sample(self.related_instances, k=num_related_instances)
         self.instance.many_to_many_field.set(random_related_instances)
 
-        response = self.client.get(reverse('forms:related_fields'), {
+        response = self.client.get(reverse('forms:get_related_fields'), {
             # Parent model class info
             'pal': 'test_app',
             'pmn': 'basicmodel',
@@ -252,11 +254,13 @@ class RelatedFieldsAPITests(ESTestCase):
             'ral': 'test_app',
             'rmn': 'basicmodel',
             'rfn': 'many_to_many_field',
+            # Meta
+            'page_size': 100,
         })
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['verbose_name'], BasicModel._meta.verbose_name)
-        self.assertEqual(len(response.data['related_field_options']),
+        self.assertEqual(len(response.data['related_field_instances']),
                          len(self.related_instances) - num_related_instances)
 
 
@@ -347,7 +351,7 @@ class UpdateBasicFieldsAPITests(TransactionTestCase):
 class UpdateRelatedFieldAPITests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            email='foo@UpdateRelatedFieldsAPITest.com',
+            email='foo@UpdateRelatedFieldAPITest.com',
             name='Baz',
             password='Foobarbaz123'
         )
@@ -355,28 +359,28 @@ class UpdateRelatedFieldAPITests(TestCase):
         self.instance = create_instance(user=self.user)
 
     def test_post(self):
-        random.seed('UpdateRelatedFieldsAPITests::test_post')
+        random.seed('UpdateRelatedFieldAPITests::test_post')
         related_instance = create_instance(user=self.user)
-        response = self.client.post(reverse('forms:update_related_fields'), {
+        response = self.client.post(reverse('forms:update_related_field'), {
             'model_label': 'test_app.BasicModel',
             'id': self.instance.id,
             'related_model_label': 'test_app.BasicModel',
-            'related_id': related_instance.id,
+            'related_ids': [related_instance.id],
             'update_type': 'add',
             'field_name': 'many_to_many_field',
-        })
+        }, content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(self.instance.many_to_many_field.all()), [related_instance])
 
-        response = self.client.post(reverse('forms:update_related_fields'), {
+        response = self.client.post(reverse('forms:update_related_field'), {
             'model_label': 'test_app.BasicModel',
             'id': self.instance.id,
             'related_model_label': 'test_app.BasicModel',
-            'related_id': related_instance.id,
+            'related_ids': [related_instance.id],
             'update_type': 'remove',
             'field_name': 'many_to_many_field',
-        })
+        }, content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(list(self.instance.many_to_many_field.all()), [])

@@ -25,6 +25,8 @@ class IndexingManager(models.Manager):
 
     def filter(self, using=settings.STUDIO_DB, start=0, size=10, verbose=False, sort=None, **kwargs):
         query = self.get_query(using=using, sort=sort, **kwargs)
+        start = int(start)
+        size = int(size)
         executed_search = query[start:size].execute()
 
         if verbose:

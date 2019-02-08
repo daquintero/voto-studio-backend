@@ -263,6 +263,19 @@ class Change(models.Model):
         raise NotImplementedError('The revert functionality is yet to be implemented.')
 
 
+BASE_HIDDEN_FIELDS = (
+    'user',
+    'tracked',
+    'date_created',
+)
+
+
+def hidden_fields(fields_tuple):
+    if not isinstance(fields_tuple, tuple):
+        raise ValueError('Provide a tuple of hidden fields.')
+    return BASE_HIDDEN_FIELDS + fields_tuple
+
+
 class TrackedModel(models.Model):
     """
     Adds several fields a model to integrate it with the changes app.
@@ -278,7 +291,7 @@ class TrackedModel(models.Model):
     search = IndexingManager()
 
     read_only_fields = ('date_created', 'user',)
-    hidden_fields = ()
+    hidden_fields = BASE_HIDDEN_FIELDS
 
     class Meta:
         abstract = True
@@ -320,7 +333,7 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
 
     read_only_fields = ('date_created', 'user',)
 
-    hidden_fields = ()
+    hidden_fields = hidden_fields(('order',))
 
     class Meta:
         abstract = True

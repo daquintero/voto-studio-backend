@@ -19,9 +19,9 @@ urlpatterns = [
         name='build',
     ),
     path(
-        f'{api_v1}/related_fields/',  # TODO: Rename to /get_related_fields/ ??
+        f'{api_v1}/get_related_fields/',  # TODO: Rename to /get_related_fields/ ??
         views.RelatedFieldsAPI.as_view(),
-        name='related_fields',
+        name='get_related_fields',
     ),
     path(
         f'{api_v1}/detail/',  # TODO: Reorder
@@ -34,9 +34,9 @@ urlpatterns = [
         name='update_basic_fields',
     ),
     path(
-        f'{api_v1}/update_media_fields/',
-        views.UpdateMediaFieldsAPI.as_view(),
-        name='update_media_relationships',
+        f'{api_v1}/update_media_field/',
+        views.UpdateMediaFieldAPI.as_view(),
+        name='update_media_field',
     ),
     path(
         f'{api_v1}/update_media_order/',
