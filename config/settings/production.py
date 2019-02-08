@@ -25,6 +25,10 @@ DATABASES[MAIN_SITE_DB]['OPTIONS'] = {'options': '-c search_path=main_site'}
 DATABASES[MAIN_SITE_DB]['ATOMIC_REQUESTS'] = True
 DATABASES[MAIN_SITE_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 
+DATABASES[SPATIAL_DB] = env.db('DATABASE_URL')  # noqa F405
+DATABASES[SPATIAL_DB]['OPTIONS'] = {'options': '-c search_path=spatial'}
+DATABASES[SPATIAL_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
+
 # CACHES
 # ------------------------------------------------------------------------------
 CACHES = {
@@ -212,6 +216,8 @@ CORS_ORIGIN_WHITELIST = (
     'votoinformado2019.com',
     'studio.votoinformado2019.com',
 )
+
+GDAL_LIBRARY_PATH = env('GDAL_LIBRARY_PATH')
 
 BASE_DIR = ROOT_DIR
 django_heroku.settings(locals())

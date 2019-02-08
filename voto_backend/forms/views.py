@@ -606,7 +606,7 @@ class UpdateRelatedFieldAPI(APIView):
         related_app_label, related_model_name = request.data['related_model_label'].split('.')
         related_model_class = get_model(app_label=related_app_label, model_name=related_model_name)
         related_instances = related_model_class.objects.filter(id__in=request.data.get('related_ids'))
-        
+
         update_type = request.data['update_type']
         field_name = camel_to_underscore(request.data['field_name'])
         field_value = get_field_value(instance, field_name=field_name)
@@ -620,6 +620,7 @@ class UpdateRelatedFieldAPI(APIView):
         response = {
             'id': instance.id,
             'type': update_type,
+            'field_name': field_name,
             'field': {
                 'model_label': model_class._meta.label,
                 'model_name_verbose': model_class._meta.verbose_name,
