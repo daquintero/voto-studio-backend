@@ -32,6 +32,7 @@ FIELD_MAP = {
     'IntegerField': Integer,
     'PositiveIntegerField': Integer,
     'FloatField': Long,
+    'DateField': Date,
     'DateTimeField': Date,
     'BooleanField': Boolean,
     'FileField': None,

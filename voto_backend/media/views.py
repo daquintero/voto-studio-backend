@@ -96,12 +96,13 @@ class DeleteImageAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        ids = request.data.get('ids')
+        ids = [int(_id) for _id in request.data.get('ids')]
         instances = models.Image.objects.filter(id__in=ids)
-        instances.delete()
+        for instance in instances:
+            instance.delete(reduce_order=True)
 
         response = {
-            'ids': [int(_id) for _id in ids],
+            'ids':  ids,
             'image_count': models.Image.objects.count(),
         }
 

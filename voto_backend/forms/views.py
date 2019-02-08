@@ -25,6 +25,7 @@ FIELD_TYPE_MAPPINGS = {
     'CharField': 'text',
     'TextField': 'textarea',
     'BooleanField': 'checkbox',
+    'DateField': 'date',
     'DateTimeField': 'datetime-local',
     'ChoiceField': 'select',
     'OneToOneField': 'select',
@@ -511,7 +512,7 @@ class RelatedFieldsAPI(APIView):
         )
 
 
-class UpdateMediaRelationshipsAPI(APIView):
+class UpdateMediaFieldsAPI(APIView):
     authentication_classes = (authentication.TokenAuthentication, )
 
     @staticmethod

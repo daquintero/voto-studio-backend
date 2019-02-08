@@ -226,7 +226,8 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
     ),
-    'DATETIME_FORMAT': "%Y-%m-%dT%H:%M:%S.%fZ"
+    'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
+    "DATE_INPUT_FORMATS": ['%Y-%m-%dT%H:%M:%S.%fZ'],
 }
 
 API_URL_V1 = 'api/v1'

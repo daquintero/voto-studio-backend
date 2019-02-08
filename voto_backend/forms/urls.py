@@ -34,8 +34,8 @@ urlpatterns = [
         name='update_basic_fields',
     ),
     path(
-        f'{api_v1}/update_media_relationships/',
-        views.UpdateMediaRelationshipsAPI.as_view(),
+        f'{api_v1}/update_media_fields/',
+        views.UpdateMediaFieldsAPI.as_view(),
         name='update_media_relationships',
     ),
     path(
