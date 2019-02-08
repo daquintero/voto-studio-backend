@@ -103,7 +103,7 @@ DATABASES = {
         'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': '127.0.0.1',
         'PORT': '5432',
-    }
+    },
 }
 
 if os.name == 'nt':

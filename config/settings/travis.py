@@ -65,5 +65,16 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5433',
         'ATOMIC_REQUESTS': True,
-    }
+    },
+    'spatial': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'OPTIONS': {
+            'options': '-c search_path=spatial',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': 'localhost',
+        'PORT': '5433',
+    },
 }

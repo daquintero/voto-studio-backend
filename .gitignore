@@ -334,7 +334,7 @@ pip-selfcheck.json
 
 ### Project template
 
-voto_backend/media/
+voto_backend/mediafiles/
 
 .pytest_cache/
 
