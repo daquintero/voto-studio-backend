@@ -1,6 +1,6 @@
-from django.contrib import admin
-from . import models
+from config.admin import register_models
 
-
-admin.site.register(models.Change)
-admin.site.register(models.ChangeGroup)
+register_models(app_label='changes', models={
+    'Change': ['default'],
+    'ChangeGroup': ['default'],
+})

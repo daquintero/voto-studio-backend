@@ -35,7 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('data joined'), default=timezone.now)
     profile_picture = models.OneToOneField(
-        'content.Image',
+        'media.Image',
         null=True,
         on_delete=models.SET_NULL,
         blank=True,

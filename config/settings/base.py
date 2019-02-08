@@ -48,6 +48,7 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    'django.contrib.gis',
 ]
 THIRD_PARTY_APPS = [
     'rest_framework',
@@ -59,7 +60,10 @@ LOCAL_APPS = [
     'voto_backend.changes',
     'voto_backend.forms',
     'voto_backend.search',
-    'voto_backend.content',
+    'voto_backend.spatial',
+    'voto_backend.media',
+    'voto_backend.corruption',
+    'voto_backend.political',
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -120,7 +124,7 @@ MIDDLEWARE = [
 STATIC_ROOT = str(ROOT_DIR('staticfiles'))
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
 STATICFILES_DIRS = [
-    str(APPS_DIR.path('static')),
+    str(ROOT_DIR.path('static')),
 ]
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
 STATICFILES_FINDERS = [
@@ -131,9 +135,9 @@ STATICFILES_FINDERS = [
 # MEDIA
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
-MEDIA_ROOT = str(APPS_DIR('media'))
+MEDIA_ROOT = str(ROOT_DIR('mediafiles'))
 # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
-MEDIA_URL = '/media/'
+MEDIA_URL = '/mediafiles/'
 
 # TEMPLATES
 # ------------------------------------------------------------------------------
@@ -207,6 +211,7 @@ MANAGERS = ADMINS
 # ------------------------------------------------------------------------------
 STUDIO_DB = 'default'
 MAIN_SITE_DB = 'main_site'
+SPATIAL_DB = 'spatial'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -227,20 +232,23 @@ REST_FRAMEWORK = {
 API_URL_V1 = 'api/v1'
 
 WORKSHOP_MODELS = (
-    # 'corruption.InformativeSnippet',
-    # 'corruption.FinancialBit',
-    # 'corruption.CorruptionCase',
-    # 'corruption.Law',
-    # 'political.Promise',
-    # 'political.Achievement',
-    # 'political.ElectoralPeriod',
-    # 'political.Campaign',
-    # 'individuals.Organization',
-    # 'individuals.Individual',
-    # 'individuals.Employment',
-    'content.IconData',
-    'content.TwitterFeed',
+    'corruption.InformativeSnippet',
+    'corruption.CorruptionCase',
+    'corruption.FinancialItem',
+    'political.Law',
+    'political.Individual',
+    'political.Organization',
+    'political.Promise',
+    'political.Achievement',
+    'political.Controversy',
+    'political.ElectoralPeriod',
 )
 
 MODELS_TO_INDEX = ()
 MODELS_TO_INDEX += WORKSHOP_MODELS
+
+BONSAI_URL = env('BONSAI_URL', default=False)
+
+DATABASE_ROUTERS = ['config.router.GeneralRouter']
+
+TEXT_FIELD_DEFAULT = '<p></p>'

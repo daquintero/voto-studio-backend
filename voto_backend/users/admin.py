@@ -1,14 +1,6 @@
-from django.contrib import admin
-from config.admin import main_site_admin, MultiDBModelAdmin
-from . import models
+from config.admin import register_models
 
-
-admin.site.register(models.User)
-admin.site.register(models.Researcher)
-
-
-class UserAdmin(MultiDBModelAdmin):
-    model = models.User
-
-
-main_site_admin.register(models.User, UserAdmin)
+register_models(app_label='users', models={
+    'User': ['default', 'main_site'],
+    'Researcher': ['default', 'main_site'],
+})

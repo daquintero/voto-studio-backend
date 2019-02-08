@@ -7,7 +7,8 @@ from django.db.models import Q, OneToOneRel
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from voto_backend.search.models import IndexingManager
+from voto_backend.forms.models import InfoMixin
+from voto_backend.search.models import IndexingManager, IndexingMixin
 
 
 STUDIO_DB = settings.STUDIO_DB
@@ -267,14 +268,17 @@ class TrackedModel(models.Model):
     Adds several fields a model to integrate it with the changes app.
     If a model inherits from this then its changes will be tracked.
     """
-    date_created = models.DateTimeField(_('Date of creation'), default=timezone.now)
+    date_created = models.DateTimeField(_('Date of Creation'), default=timezone.now)
     tracked = models.BooleanField(_('Tracked'), default=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    location_id = models.CharField(_('Location Identifier'), max_length=32, null=True, blank=True)
+    location_id_name = models.CharField(_('Location Identifier Name'), max_length=32, null=True, blank=True)
 
     objects = models.Manager()
     search = IndexingManager()
 
     read_only_fields = ('date_created', 'user',)
+    hidden_fields = ()
 
     class Meta:
         abstract = True
@@ -294,6 +298,59 @@ class TrackedModel(models.Model):
                 raise ValueError("The 'fake' keyword argument can only be set when using the STUDIO_DB.")
         else:
             super().delete(*args, using=using, **kwargs)
+
+
+def get_order_default():
+    return {
+        'images': [],
+        'videos': [],
+        'resources': [],
+    }
+
+
+class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
+    source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
+    date = models.DateTimeField(blank=True, null=True)
+    statistics = JSONField(_('Statistics'), blank=True, default=dict)
+
+    order = JSONField(_('Media Content Order'), blank=True, default=get_order_default)
+    images = models.ManyToManyField('media.Image', blank=True)
+    videos = models.ManyToManyField('media.Video', blank=True)
+    resources = models.ManyToManyField('media.Resource', blank=True)
+
+    read_only_fields = ('date_created', 'user',)
+
+    hidden_fields = ()
+
+    class Meta:
+        abstract = True
+
+    def set_order(self, order, media_type):
+        order_dict = self.order
+        order_dict[media_type] = order
+        self.order = order_dict
+        self.save()
+
+    def get_order(self, media_type):
+        order = self.order[media_type]
+        return [int(id) for id in order if id]
+
+    def extend_order(self, media_id, media_type):
+        order = self.get_order(media_type)
+        order.append(media_id)
+        self.set_order(order, media_type)
+
+    def reduce_order(self, media_id, media_type):
+        order = self.get_order(media_type)
+        order.remove(media_id)
+        self.set_order(order, media_type)
+
+    def update_order(self, result, media_type):
+        order = self.get_order(media_type)
+        source_index = result['source']['index']
+        order = [*order[0:source_index], *order[source_index + 1:]]
+        order.insert(result['destination']['index'], result['draggable_id'])
+        self.set_order(order, media_type)
 
 
 class ChangeGroupManager(models.Manager):

@@ -67,5 +67,3 @@ DATABASES = {
         'ATOMIC_REQUESTS': True,
     }
 }
-
-BONSAI_URL = env('BONSAI_URL')

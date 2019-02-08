@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from voto_backend.search import clear_indices, bulk_indexing
+from voto_backend.search.indexing import clear_indices, bulk_indexing
 
 
 class Command(BaseCommand):

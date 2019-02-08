@@ -34,9 +34,19 @@ urlpatterns = [
         name='update_basic_fields',
     ),
     path(
-        f'{api_v1}/update_related_fields/',
+        f'{api_v1}/update_media_relationships/',
+        views.UpdateMediaRelationshipsAPI.as_view(),
+        name='update_media_relationships',
+    ),
+    path(
+        f'{api_v1}/update_media_order/',
+        views.UpdateMediaOrderAPI.as_view(),
+        name='update_media_order',
+    ),
+    path(
+        f'{api_v1}/update_related_field/',
         views.UpdateRelatedFieldAPI.as_view(),
-        name='update_related_fields',
+        name='update_related_field',
     ),
     path(
         f'{api_v1}/publish/',
@@ -47,5 +57,20 @@ urlpatterns = [
         f'{api_v1}/delete_instance/',
         views.DeleteInstanceAPI.as_view(),
         name='delete_instance',
+    ),
+    path(
+        f'{api_v1}/list_instances/',
+        views.InstanceListAPI.as_view(),
+        name='list_instances',
+    ),
+    path(
+        f'{api_v1}/finder/',
+        views.InstanceFinderAPI.as_view(),
+        name='finder',
+    ),
+    path(
+        f'{api_v1}/location_picker/',
+        views.LocationPickerAPI.as_view(),
+        name='location_picker',
     ),
 ]

@@ -52,7 +52,7 @@ class IndexingMixin:
             meta={'id': self.id},
             model_label=model_label,
             user=getattr(getattr(self, 'user', None), 'id', None),
-            table_values=self.table_values,
+            table_values=self.get_table_values(),
             **self.get_kwargs(model_label),
             refresh=True,
         )
@@ -65,7 +65,7 @@ class IndexingMixin:
         document_class = get_document_class(model_label, using=using)
         document = document_class.get(id=self.id, index=build_index_name(model_label, using=using))
         document.update(
-            table_values=self.table_values,
+            table_values=self.get_table_values(),
             refresh=True,
         )
 

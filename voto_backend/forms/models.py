@@ -1,6 +1,14 @@
+def _is_numeric(model_class, table_head):
+    field_type = model_class._meta.get_field(table_head).get_internal_type()
+
+    return (field_type == 'FloatField' or
+            field_type == 'IntegerField' or
+            field_type == 'PositiveIntegerField' or
+            field_type == 'AutoField')
+
+
 class InfoMixin:
-    @property
-    def table_values(self):
+    def get_table_values(self):
         """
         Return some simple info for the tables in VotoStudio's workshop.
         """
@@ -8,25 +16,32 @@ class InfoMixin:
         if not table_descriptors:
             raise AttributeError(f"Please add the 'table_descriptors' field to the model '{self._meta.label}'")
 
+        # TODO: Sort out choice fields
         return {
             'id': self.id,
-            'descriptors': {
-                'values': [{
-                    'name': d,
-                    'value': str(getattr(self, d)),
-                } for d in table_descriptors]},
-            'user_email': self.user.email if self.user else None,
+            'descriptors': [{
+                'name': d,
+                'value': str(getattr(self, d)),
+            } for d in table_descriptors],
+            'user_email': self.user.email,
+            'user_id': self.user.id,
             'app_label': self._meta.app_label,
             'model_name': self._meta.model_name,
             'model_label': self._meta.label,
         }
 
-    @property
-    def table_heads(self):
-        return [*getattr(self, 'table_descriptors', None)]
+    def get_table_heads(self, verbose=False):
+        if verbose:
+            return [{
+                'id': table_head,
+                'numeric': _is_numeric(self, table_head),
+                'disable_padding': False,
+                'label': table_head.replace('_', ' ').title(),
+            } for table_head in [*getattr(self, 'table_descriptors', [])]]
+        else:
+            return [*getattr(self, 'table_descriptors', [])]
 
-    @property
-    def detail_info(self):
+    def get_detail_info(self):
         """
         Return more detailed info for the detail view in VotoStudio's workshop.
         """

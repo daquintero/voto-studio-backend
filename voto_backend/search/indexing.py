@@ -3,7 +3,7 @@ import re
 from django.apps import apps
 from django.conf import settings
 from elasticsearch.helpers import bulk
-from elasticsearch_dsl import Document, Text, Date, Boolean, Integer, Long
+from elasticsearch_dsl import Document, Text, Date, Boolean, Integer, Long, Object
 from elasticsearch_dsl.connections import create_connection
 from shared.utils import get_model
 from .utils import get_models_to_index, get_fields
@@ -14,7 +14,6 @@ client = None
 if bonsai:
     auth = re.search('https\:\/\/(.*)\@', bonsai).group(1).split(':')
     host = bonsai.replace('https://%s:%s@' % (auth[0], auth[1]), '')
-
     client = create_connection(
         host=host,
         port=443,
@@ -31,11 +30,14 @@ FIELD_MAP = {
     'TextField': Text,
     'URLField': Text,
     'IntegerField': Integer,
+    'PositiveIntegerField': Integer,
     'FloatField': Long,
     'DateTimeField': Date,
     'BooleanField': Boolean,
     'FileField': None,
+    'JSONField': Object,
 }
+
 
 MODELS_TO_INDEX = get_models_to_index()
 

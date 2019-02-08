@@ -1,5 +1,8 @@
+import os
+
 from .base import *  # noqa
 from .base import env
+
 
 # GENERAL
 # ------------------------------------------------------------------------------
@@ -89,12 +92,35 @@ DATABASES = {
         'HOST': '127.0.0.1',
         'PORT': '5432',
         'ATOMIC_REQUESTS': True,
+    },
+    'spatial': {
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'OPTIONS': {
+            'options': '-c search_path=spatial',
+        },
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
+
+if os.name == 'nt':
+    import platform
+    OSGEO4W = r"C:\OSGeo4W"
+    if '64' in platform.architecture()[0]:
+        OSGEO4W += "64"
+    assert os.path.isdir(OSGEO4W), "Directory does not exist: " + OSGEO4W
+    os.environ['OSGEO4W_ROOT'] = OSGEO4W
+    os.environ['GDAL_DATA'] = OSGEO4W + r"\share\gdal"
+    os.environ['PROJ_LIB'] = OSGEO4W + r"\share\proj"
+    os.environ['PATH'] = OSGEO4W + r"\bin;" + os.environ['PATH']
+
 
 CORS_ORIGIN_WHITELIST = (
     'localhost:3000',
     'localhost:3001',
 )
 
-BONSAI_URL = env('BONSAI_URL')
+ES_PATH = env('ES_PATH')
