@@ -55,7 +55,7 @@ def parse_data(data, user):
     individuals = []
     request = RequestFactory()
     request.user = user
-    for index, row in data.iterrows():
+    for index, row in data[0].iterrows():
         data = {}
         if isinstance(row['Facebook'], str) and len(row['Facebook']) > 5:
             data['facebook_username'] = social_media_regex(row['Facebook'], 'facebook')
@@ -81,4 +81,7 @@ def parse_data(data, user):
         base_instance = Change.objects.stage_created(individual, request)
         individuals.append(base_instance)
 
-    return individuals
+    for index, row in data[1].iterrows():
+        data = {}
+        data['id'] = row['id']
+
