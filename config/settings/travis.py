@@ -78,3 +78,5 @@ DATABASES = {
         'PORT': '5433',
     },
 }
+
+BONSAI_URL = False
