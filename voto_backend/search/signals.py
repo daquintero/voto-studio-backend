@@ -4,7 +4,7 @@ from django.dispatch import receiver
 
 
 def to_index(sender):
-    return (sender._meta.label in settings.MODELS_TO_INDEX or sender.tracked)
+    return (sender._meta.label in settings.MODELS_TO_INDEX and sender.tracked)
 
 
 @receiver(post_save)
