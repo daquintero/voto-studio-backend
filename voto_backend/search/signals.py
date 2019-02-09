@@ -3,9 +3,13 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 
+def to_index(sender):
+    return (sender._meta.label in settings.MODELS_TO_INDEX or sender.tracked)
+
+
 @receiver(post_save)
 def create_or_update_document(sender, instance, created, using, **kwargs):
-    if sender._meta.label not in settings.MODELS_TO_INDEX:
+    if not to_index(sender):
         return
 
     if created:
@@ -16,7 +20,7 @@ def create_or_update_document(sender, instance, created, using, **kwargs):
 
 @receiver(post_delete)
 def delete_document(sender, instance, using, **kwargs):
-    if sender._meta.label not in settings.MODELS_TO_INDEX:
+    if not to_index(sender):
         return
 
     obj = instance.delete_document(using=using)

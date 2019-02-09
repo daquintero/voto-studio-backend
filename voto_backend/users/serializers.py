@@ -27,5 +27,5 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_profile_picture_url(self, obj):
-        media_url = settings.MEDIA_URL
-        return obj.profile_picture.image.url if obj.profile_picture else f'{media_url}/default_profile_picture.jpg'
+        default_image_url = 'https://s3.amazonaws.com/votoinformado2019/images/default_profile_picture.jpg'
+        return obj.profile_picture.image.url if obj.profile_picture else default_image_url
