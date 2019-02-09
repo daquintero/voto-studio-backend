@@ -28,6 +28,7 @@ DATABASES[MAIN_SITE_DB]['ATOMIC_REQUESTS'] = True
 DATABASES[MAIN_SITE_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 
 DATABASES[SPATIAL_DB] = env.db('DATABASE_URL')  # noqa F405
+DATABASES[SPATIAL_DB]['ENGINE'] = 'django.contrib.gis.db.backends.postgis',
 DATABASES[SPATIAL_DB]['OPTIONS'] = {'options': '-c search_path=spatial'}
 DATABASES[SPATIAL_DB]['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)  # noqa F405
 
