@@ -18,7 +18,7 @@ class UserDetailAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        user = get_object_or_404(models.User, id=kwargs.get('user_id'))
+        user = get_object_or_404(models.User, id=request.GET.get('id'))
         user_data = serializers.UserSerializer(user).data
         type = kwargs.get('type')
 
