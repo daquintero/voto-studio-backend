@@ -7,7 +7,7 @@ from .base import env
 # GENERAL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
-DEBUG = False
+DEBUG = True
 TESTING = False
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env('DJANGO_SECRET_KEY', default='bTQAYpxY4cfIIJbe4lJtoOdPgScrFJCWIqcSndXL5qd0OcsDvvDKIbYNTe7NTgDa')
