@@ -78,10 +78,20 @@ def parse_data(data, user):
             user=user,
         )
 
+        individual.location_id_name = 'CIRCUITO'
+        individual.location_id = row['Circuito']
+
+        statistics = {}
+        statistics['Leyes_Propuestas'] = row['Leyes_Propuestas']
+        statistics['Asistencia'] = row['Asistencia']
+        statistics['Circuito'] = row['Circuito']
+        statistics['Periodos'] = row['Periodos']
+
+
+
         base_instance = Change.objects.stage_created(individual, request)
         individuals.append(base_instance)
 
     for index, row in data[1].iterrows():
         data = {}
         data['id'] = row['id']
-
