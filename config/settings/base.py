@@ -248,7 +248,7 @@ WORKSHOP_MODELS = (
 MODELS_TO_INDEX = ()
 MODELS_TO_INDEX += WORKSHOP_MODELS
 
-BONSAI_URL = env('BONSAI_URL', default=False)
+BONSAI_URL = env('BONSAI_URL')
 
 DATABASE_ROUTERS = ['config.router.GeneralRouter']
 
