@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -55,6 +57,9 @@ class ChangeManager(models.Manager):
         base_instance_id = instance.id
         instance.id = None
         instance.tracked = False
+        for field in instance._meta.get_fields():
+            if not field.is_relation and field.unique and not field.name == 'id':
+                setattr(instance, field.name, f'{getattr(instance, field.name)}-{uuid.uuid4()}')
         for field in self._get_one_to_one_fields(instance):
             setattr(instance, f'{field.name}_id', None)
         instance.save(using=STUDIO_DB)
@@ -324,7 +329,7 @@ def get_order_default():
 class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
-    statistics = JSONField(_('Statistics'), blank=True, default=dict)
+    statistics = JSONField(_('Statistics'), blank=True, null=True, default=dict)
 
     order = JSONField(_('Media Content Order'), blank=True, default=get_order_default)
     images = models.ManyToManyField('media.Image', blank=True)

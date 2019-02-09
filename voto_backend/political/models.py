@@ -21,6 +21,7 @@ CATEGORIES = (
     ('14', _('Business')),
     ('15', _('Industry')),
     ('16', _('Entertainment')),
+    ('17', _('None')),
 )
 
 
@@ -106,7 +107,7 @@ class Individual(TrackedWorkshopModel):
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
     individuals = models.ManyToManyField('self', blank=True)
-    organizations = models.ManyToManyField('political.Organization', blank=True)
+    laws = models.ManyToManyField('political.Law', blank=True)
 
     table_descriptors = (
         'name',
@@ -143,7 +144,7 @@ class Individual(TrackedWorkshopModel):
 
 
 class Organization(TrackedWorkshopModel):
-    name = models.CharField(_('Name'), max_length=64, default=str)
+    name = models.CharField(_('Name'), max_length=2048, default=str, unique=True)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     email = models.CharField(_('Email Address'), max_length=64, default=str)
@@ -157,6 +158,7 @@ class Organization(TrackedWorkshopModel):
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
     organizations = models.ManyToManyField('self', blank=True)
+    individuals = models.ManyToManyField('political.Individual', blank=True)
 
     table_descriptors = (
         'name',
