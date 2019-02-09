@@ -1,4 +1,6 @@
 import logging
+import os
+
 import django_heroku
 
 from .base import *  # noqa
@@ -217,7 +219,8 @@ CORS_ORIGIN_WHITELIST = (
     'studio.votoinformado2019.com',
 )
 
-GDAL_LIBRARY_PATH = env('GDAL_LIBRARY_PATH')
+GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
+GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
 
 BASE_DIR = ROOT_DIR
 django_heroku.settings(locals())

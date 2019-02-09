@@ -64,6 +64,11 @@ urlpatterns = [
         name='list_instances',
     ),
     path(
+        f'{api_v1}/list_related_instances/',
+        views.RelatedInstanceListAPI.as_view(),
+        name='list_related_instances',
+    ),
+    path(
         f'{api_v1}/finder/',
         views.InstanceFinderAPI.as_view(),
         name='finder',

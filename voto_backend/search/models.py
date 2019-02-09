@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from elasticsearch.exceptions import NotFoundError
+from elasticsearch.exceptions import NotFoundError, RequestError
 from elasticsearch_dsl import Search, Q
 from .utils import get_fields
 from .indexing import build_index_name, get_document_class
@@ -18,16 +18,24 @@ class IndexingManager(models.Manager):
         must_not = [Q(_get_search_type(k[1]), **{k[0]: k[1]}) for k in kwargs.get('must_not', {}).items()]
 
         query = search.query(Q(({'bool': {'must': must, 'must_not': must_not}})))
-        if sort:
+
+        if sort and self.model.objects.using(using).count():
             query = query.sort(sort)
 
         return query
 
-    def filter(self, using=settings.STUDIO_DB, start=0, size=10, verbose=False, sort=None, **kwargs):
+    def filter(self, using=settings.STUDIO_DB, page=0, size=10, verbose=False, sort=None, search=None, **kwargs):
         query = self.get_query(using=using, sort=sort, **kwargs)
-        start = int(start)
+
         size = int(size)
-        executed_search = query[start:size].execute()
+        page = int(page)
+        from_ = page * size
+        to = from_ + size
+
+        if search and len(search):
+            executed_search = query.query('query_string', query=search)[from_:to].execute()
+        else:
+            executed_search = query[from_:to].execute()
 
         if verbose:
             response = executed_search.to_dict()

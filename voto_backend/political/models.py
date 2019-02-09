@@ -91,7 +91,7 @@ class Law(TrackedWorkshopModel):
 
 
 class Individual(TrackedWorkshopModel):
-    name = models.CharField(_('Name'), max_length=64, default=str)
+    name = models.CharField(_('Name'), max_length=128, default=str)
     alias = models.CharField(_('Alias'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)

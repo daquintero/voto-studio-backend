@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from voto_backend.changes.models import TrackedWorkshopModel
+from voto_backend.changes.models import TrackedWorkshopModel, hidden_fields
 
 
 class InformativeSnippet(TrackedWorkshopModel):
@@ -70,7 +70,7 @@ class CorruptionCase(TrackedWorkshopModel):
         'related': (),
     }
 
-    hidden_fields = ('source',)
+    hidden_fields = hidden_fields(('source',))
 
 
 class FinancialItem(TrackedWorkshopModel):

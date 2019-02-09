@@ -18,6 +18,7 @@ from voto_backend.media.models import Image, Video, Resource
 from voto_backend.media.serializers import ImageSerializer, VideoSerializer, ResourceSerializer
 from voto_backend.spatial.models import DataSet
 
+
 FIELD_TYPE_MAPPINGS = {
     'IntegerField': 'number',
     'PositiveIntegerField': 'number',
@@ -32,6 +33,7 @@ FIELD_TYPE_MAPPINGS = {
     'ForeignKey': 'select',
     'ManyToManyField': 'select',
 }
+
 
 MEDIA_MODEL_KEYS = (
     'images',
@@ -729,6 +731,46 @@ class InstanceListAPI(APIView):
     """
     @staticmethod
     def get(request):
+        model_label = request.GET.get('ml')
+        model_class = get_model(model_label=model_label)
+
+        must_not = []
+
+        instance_id = request.GET.get('id')
+        field_name = request.GET.get('fn')
+        if not instance_id == 'null' and instance_id is not None:
+            model_class = get_model(model_label=model_label)
+            instance = get_object_or_404(model_class, id=instance_id)
+            related_instances = get_field_value(instance, field_name=field_name).all()
+            must_not = [instance.id for instance in related_instances]
+
+        instances = model_class.search.filter(
+            must={'tracked': True},
+            must_not={'id': must_not},
+            page=request.GET.get('page'),
+            size=request.GET.get('size'),
+            sort='-id',
+            search=request.GET.get('search', False),
+        )
+
+        return Response({
+            'count': model_class.objects.filter(tracked=True).count(),
+            'list': {
+                'instances': instances,
+                'table_heads': model_class.get_table_heads(model_class, verbose=True),
+                'model_label': model_label,
+                'model_name': model_class._meta.model_name,
+                'verbose_name': model_class._meta.verbose_name,
+            }
+        })
+
+
+class RelatedInstanceListAPI(APIView):
+    """
+    Class providing API endpoints used to list instances.
+    """
+    @staticmethod
+    def get(request):
         related_model_label = request.GET.get('rml')
         related_model_class = get_model(model_label=related_model_label)
 
@@ -743,9 +785,17 @@ class InstanceListAPI(APIView):
             related_instances = get_field_value(instance, field_name=field_name).all()
             must_not = [instance.id for instance in related_instances]
 
-        instances = related_model_class.search.filter(must={'tracked': True}, must_not={'id': must_not})
+        instances = related_model_class.search.filter(
+            must={'tracked': True},
+            must_not={'id': must_not},
+            page=request.GET.get('page'),
+            size=request.GET.get('size'),
+            sort='-id',
+            search=request.GET.get('search', False),
+        )
 
         return Response({
+            'count': related_model_class.objects.filter(tracked=True).count(),
             'list': {
                 'instances': instances,
                 'table_heads': related_model_class.get_table_heads(related_model_class, verbose=True),
