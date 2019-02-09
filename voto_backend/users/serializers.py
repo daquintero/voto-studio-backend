@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework import validators
 from . import models
@@ -26,4 +27,5 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_profile_picture_url(self, obj):
-        return obj.profile_picture.image.url if obj.profile_picture else '/media/images/default_profile_picture.jpg'
+        media_url = settings.MEDIA_URL
+        return obj.profile_picture.image.url if obj.profile_picture else f'{media_url}/default_profile_picture.jpg'

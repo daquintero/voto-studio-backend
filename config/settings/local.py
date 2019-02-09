@@ -118,6 +118,8 @@ if os.name == 'nt':
     os.environ['PATH'] = OSGEO4W + r"\bin;" + os.environ['PATH']
 
 
+BONSAI_URL = False
+
 CORS_ORIGIN_WHITELIST = (
     'localhost:3000',
     'localhost:3001',

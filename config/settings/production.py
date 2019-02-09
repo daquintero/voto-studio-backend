@@ -220,6 +220,8 @@ CORS_ORIGIN_WHITELIST = (
     'studio.votoinformado2019.com',
 )
 
+BONSAI_URL = env('BONSAI_URL')
+
 GDAL_LIBRARY_PATH = os.environ.get('GDAL_LIBRARY_PATH')
 GEOS_LIBRARY_PATH = os.environ.get('GEOS_LIBRARY_PATH')
 
