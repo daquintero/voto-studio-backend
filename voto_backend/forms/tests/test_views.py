@@ -15,18 +15,6 @@ from voto_backend.changes.models import Change
 from voto_backend.users.models import User
 
 
-class ModelListTests(ESTestCase):
-    @create_test_user
-    def test_get(self, user):
-        self.client.defaults['HTTP_AUTHORIZATION'] = auth_header(user)
-        response = self.client.get(reverse('forms:list'))
-        items = response.data['items']
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(items))
-        self.assertEqual(len(items), len(settings.WORKSHOP_MODELS))
-
-
 class ModuleLevelFunctionTests(ESTestCase):
     def setUp(self):
         self.user = User.objects.create_user(

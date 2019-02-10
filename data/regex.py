@@ -1,8 +1,11 @@
+import pandas as pd
 import re
 
+from django.db import transaction
 from django.test import RequestFactory
 from voto_backend.changes.models import Change
 from voto_backend.political.models import Individual, Law, Organization
+from voto_backend.users.models import User
 
 
 def name_regex(name):
@@ -52,10 +55,11 @@ def social_media_regex(full_url, domain):
 
 
 def create_orgs(data, user):
+    print('Creating orgs...')
     request = RequestFactory()
     request.user = user
 
-    for index, row in data[0].iterrows():
+    for index, row in data.iterrows():
         data = {}
         try:
             org = Organization.objects.create(
@@ -69,10 +73,14 @@ def create_orgs(data, user):
 
 
 def parse_data(data, user):
+    print('Migrating rows...')
     individuals = []
     request = RequestFactory()
     request.user = user
     for index, row in data.iterrows():
+        print(f'-------------------------------------------------------------')
+        print(f'Migrating row {index}                               {index/71*100}%')
+        print(f'-------------------------------------------------------------\n')
         data = {}
         if isinstance(row['Facebook'], str) and len(row['Facebook']) > 5:
             data['facebook_username'] = social_media_regex(row['Facebook'], 'facebook')
@@ -97,11 +105,11 @@ def parse_data(data, user):
             location_id=row['Circuito'],
         )
 
-        statistics = {}
-        statistics['Leyes_Propuestas'] = row['Leyes_Propuestas']
-        statistics['Asistencia'] = row['Asistencia']
-        statistics['Circuito'] = row['Circuito']
-        statistics['Periodos'] = row['Periodos']
+        statistics = []
+        statistics.append({'icon': 'home', 'name': 'Leyes_Propuestas', 'value': str(row['Leyes_Propuestas'])})
+        statistics.append({'icon': 'plane', 'name': 'Asistencia', 'value': str(row['Asistencia'])})
+        statistics.append({'icon': 'wrench', 'name': 'Circuito', 'value': str(row['Circuito'])})
+        statistics.append({'icon': 'spinner', 'name': 'Periodos', 'value': str(row['Periodos'])})
 
         individual.statistics = statistics
         try:
@@ -113,12 +121,13 @@ def parse_data(data, user):
         base_instance = Change.objects.stage_created(individual, request)
 
         org = Organization.objects.get(name=row['Political_Party_Name'])
-        org.individuals.add(individual)
+        org.individuals.add(base_instance)
         base_org = Change.objects.stage_updated(org, request)
 
         laws = []
         try:
-            for law_dict in laws_regex(row['Leyes']):
+            for index, law_dict in enumerate(laws_regex(row['Leyes'])):
+                print(f'Migrating law {index}...')
                 law = Law.objects.create(
                     long_description=law_dict['law_description'],
                     code=law_dict['law_number'],
@@ -137,3 +146,11 @@ def parse_data(data, user):
         base_instance.laws.set(laws)
         base_instance = Change.objects.stage_updated(base_instance, request)
         base_law_instances = Change.objects.bulk_stage_updated(laws, request)
+
+
+def migrate(user_id=None):
+    data = pd.read_excel('data/final_diputados.xlsx', sheet_name=0)
+    user = User.objects.get(id=user_id)
+
+    create_orgs(data, user)
+    parse_data(data, user)

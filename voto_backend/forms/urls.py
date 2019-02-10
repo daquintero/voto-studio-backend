@@ -9,9 +9,9 @@ api_v1 = settings.API_URL_V1
 
 urlpatterns = [
     path(
-        f'{api_v1}/list/',
-        views.ModelListAPI.as_view(),
-        name='list',
+        f'{api_v1}/finder/',
+        views.InstanceFinderAPI.as_view(),
+        name='finder',
     ),
     path(
         f'{api_v1}/build/',
@@ -19,14 +19,14 @@ urlpatterns = [
         name='build',
     ),
     path(
-        f'{api_v1}/get_related_fields/',  # TODO: Rename to /get_related_fields/ ??
-        views.RelatedFieldsAPI.as_view(),
-        name='get_related_fields',
+        f'{api_v1}/location_picker/',
+        views.LocationPickerAPI.as_view(),
+        name='location_picker',
     ),
     path(
-        f'{api_v1}/detail/',  # TODO: Reorder
-        views.InstanceDetailAPI.as_view(),
-        name='detail',
+        f'{api_v1}/get_related_fields/',
+        views.RelatedFieldsAPI.as_view(),
+        name='get_related_fields',
     ),
     path(
         f'{api_v1}/update_basic_fields/',
@@ -49,16 +49,6 @@ urlpatterns = [
         name='update_related_field',
     ),
     path(
-        f'{api_v1}/publish/',
-        views.PublishContentAPI.as_view(),
-        name='publish',
-    ),
-    path(
-        f'{api_v1}/delete_instance/',
-        views.DeleteInstanceAPI.as_view(),
-        name='delete_instance',
-    ),
-    path(
         f'{api_v1}/list_instances/',
         views.InstanceListAPI.as_view(),
         name='list_instances',
@@ -69,13 +59,18 @@ urlpatterns = [
         name='list_related_instances',
     ),
     path(
-        f'{api_v1}/finder/',
-        views.InstanceFinderAPI.as_view(),
-        name='finder',
+        f'{api_v1}/detail/',  # TODO: Reorder
+        views.InstanceDetailAPI.as_view(),
+        name='detail',
     ),
     path(
-        f'{api_v1}/location_picker/',
-        views.LocationPickerAPI.as_view(),
-        name='location_picker',
+        f'{api_v1}/delete_instance/',
+        views.DeleteInstanceAPI.as_view(),
+        name='delete_instance',
+    ),
+    path(
+        f'{api_v1}/publish/',
+        views.PublishContentAPI.as_view(),
+        name='publish',
     ),
 ]

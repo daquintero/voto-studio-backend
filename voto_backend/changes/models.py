@@ -269,9 +269,11 @@ class Change(models.Model):
 
 
 BASE_HIDDEN_FIELDS = (
+    'id',
     'user',
     'tracked',
     'date_created',
+    'order',
 )
 
 
@@ -329,7 +331,7 @@ def get_order_default():
 class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
-    statistics = JSONField(_('Statistics'), blank=True, null=True, default=dict)
+    statistics = JSONField(_('Statistics'), blank=True, null=True, default=list)
 
     order = JSONField(_('Media Content Order'), blank=True, default=get_order_default)
     images = models.ManyToManyField('media.Image', blank=True)

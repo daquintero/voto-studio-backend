@@ -4,10 +4,16 @@ from django.core.management import call_command
 
 
 class Command(BaseCommand):
+    def add_arguments(self, parser):
+        parser.add_argument('--bypass', action='store', dest='bypass', help='Bypass the confirmation step')
+
     def handle(self, *args, **options):
-        ans = input(f'This will clear ALL change instances, ALl forms instances and reset ALL indices! '
-                    f'Do you wish to continue? [y/N] ')
-        confirm = ans.lower() == 'y'
+        if not options.get('bypass'):
+            ans = input(f'This will clear ALL change instances, ALl forms instances and reset ALL indices! '
+                        f'Do you wish to continue? [y/N] ')
+            confirm = ans.lower() == 'y'
+        else:
+            confirm = True
 
         if confirm:
             self.stdout.write(f"Clearing instances in '{settings.MAIN_SITE_DB}'...")

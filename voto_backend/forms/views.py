@@ -20,6 +20,7 @@ from voto_backend.spatial.models import DataSet
 
 
 FIELD_TYPE_MAPPINGS = {
+    'AutoField': 'number',
     'IntegerField': 'number',
     'PositiveIntegerField': 'number',
     'FloatField': 'number',
@@ -29,6 +30,7 @@ FIELD_TYPE_MAPPINGS = {
     'DateField': 'date',
     'DateTimeField': 'datetime-local',
     'ChoiceField': 'select',
+    'JSONField': 'json',
     'OneToOneField': 'select',
     'ForeignKey': 'select',
     'ManyToManyField': 'select',
@@ -58,42 +60,6 @@ MEDIA_SERIALIZER_MAPPINGS = {
 
 WORKSHOP_MODELS = settings.WORKSHOP_MODELS
 MEDIA_MODELS = list(apps.get_app_config('media').get_models())
-
-
-class ModelListAPI(APIView):
-    """
-        Class providing API endpoints for listing
-        the test_app that can be controlled.
-        """
-    authentication_classes = (authentication.TokenAuthentication,)
-
-    @staticmethod
-    def get(request):
-        """
-        Return a list of all the test_app that
-        can be controlled in the workshop.
-        """
-        if not request.user.is_authenticated:
-            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
-
-        response = []
-        for model_label in WORKSHOP_MODELS:
-            model_class = get_model(model_label=model_label)
-            results = model_class.search.filter(must={'tracked': True, 'user': request.user.id})
-            response.append({
-                'model_label': model_label,
-                'app_label': model_class._meta.app_label,
-                'model_name': model_class._meta.model_name,
-                'verbose_name': model_class._meta.verbose_name,
-                'verbose_name_plural': model_class._meta.verbose_name_plural,
-                'verbose_name_plural_title': model_class._meta.verbose_name_plural.title(),
-                'count': len(results),
-                'values': results,
-                'table_heads': model_class.get_table_heads(model_class) if results else [],
-                'loaded': True,
-            })
-
-        return Response({'items': response}, status=status.HTTP_200_OK)
 
 
 def is_forward_rel(field):
@@ -274,10 +240,7 @@ def get_fields(model=None, instance=None):
     model_class = model if model else instance._meta.model
     fields = [
         f for f in model_class._meta.get_fields()
-        if not (
-            f.get_internal_type() == 'AutoField' or
-            f.name in model_class.hidden_fields
-        )
+        if f.name not in model_class.hidden_fields
     ]
 
     return fields
@@ -291,8 +254,7 @@ def get_basic_fields(model=None, instance=None):
             f.get_internal_type() == 'ManyToManyField' or
             type(f) is OneToOneRel or
             type(f) is ManyToOneRel or
-            f.name in hidden_fields or
-            f.get_internal_type() == 'JSONField'
+            f.name in hidden_fields
         )
     ]
 
@@ -314,6 +276,9 @@ def get_related_fields(model=None, instance=None):
         if (f.get_internal_type() == 'ManyToManyField' and
             f.related_model not in MEDIA_MODELS)
     ]
+
+    print(MEDIA_MODELS)
+    print(related_fields)
 
     return related_fields
 
