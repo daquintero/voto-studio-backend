@@ -13,7 +13,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Resetting data...")
             call_command('migrate_data_reset')
             self.stdout.write(f"Migrating data...")
-            migrate(user_id=2)
+            migrate()
             self.stdout.write('Successfully migrated data.')
         else:
             self.stdout.write('Cancelled.')

@@ -1,10 +1,10 @@
+import math
 import pandas as pd
 import re
 
-from django.db import transaction
 from django.test import RequestFactory
 from voto_backend.changes.models import Change
-from voto_backend.political.models import Individual, Law, Organization
+from voto_backend.political.models import Individual, Law, Organization, Controversy
 from voto_backend.users.models import User
 
 
@@ -45,11 +45,84 @@ def laws_regex(law_string):
         pass
 
 
+def projects_regex(law_string):
+    try:
+        law_number_regex = re.compile("^Proyecto de ley (\d+)|( /(\d+))")
+        laws_compendium = []
+        for raw_law in law_string:
+            try:
+                full_meta = law_number_regex.match(raw_law).group(0)
+                law_number = law_number_regex.match(raw_law).group(1)
+                raw_law_description = re.sub(full_meta, "", raw_law)
+                law_description = "%s%s" % (raw_law_description[1].upper(), raw_law_description[2:])
+                law = {'law_number' : law_number, 'law_description': law_description}
+                laws_compendium.append(law)
+            except AttributeError:
+                print("Oh ----------- " + raw_law)
+            except IndexError:
+                print("Oh ----------- " + raw_law)
+        return laws_compendium
+    except AttributeError:
+        print("Oh Oh----------- " + law_string)
+
+
 def social_media_regex(full_url, domain):
     rs = f'(https?:\/\/)?((www|[a-z]{2}-[a-z]{2})\.)?{domain}\.com\/([A-Za-z0-9\.\-\_]{{5,}})\/?(\?(\w+=\w+&?)*)?$'
     res = re.compile(rs, re.IGNORECASE)
 
     return res.match(full_url).group(4)
+
+
+def create_law_projects(data, user):
+    print('Creating law projects...')
+    request = RequestFactory()
+    request.user = user
+    laws = []
+
+    for index, row in data.iterrows():
+        print(f'{round(index/364*100, ndigits=3)}%')
+        try:
+            inner_laws = []
+            for index, law_dict in enumerate(laws_regex(row['Law_Projects'])):
+                print(f'Migrating law {index}...')
+                law = Law.objects.create(
+                    long_description=law_dict['law_description'],
+                    code=law_dict['law_number'],
+                    user=user,
+                    category=17,
+                    source=row['Source']
+                )
+                base_law_instance = Change.objects.stage_created(law, request)
+                inner_laws.append(base_law_instance)
+            laws.append({'id': row['id'], 'laws': inner_laws})
+        except TypeError:
+            pass
+
+    return laws
+
+
+def create_controversies(data, user):
+    print('Creating controversies...')
+    request = RequestFactory()
+    request.user = user
+
+    first_individual_id = Individual.objects.all().order_by('id')[0].id
+
+    for index, row in data.iterrows():
+        print(f'{round(index/520*100, ndigits=3)}%')
+        individual = Individual.objects.get(id=first_individual_id + row['id'])
+
+        controversy = Controversy.objects.create(
+            brief_description=row['controversias'],
+            source=row['source'] if isinstance(row['source'], str) else None,
+            type=17,
+            user=user,
+        )
+        controversy.individual = individual
+        controversy.save()
+
+        base_controversy = Change.objects.stage_created(controversy, request)
+        base_individual = Change.objects.stage_updated(individual, request)
 
 
 def create_orgs(data, user):
@@ -58,6 +131,7 @@ def create_orgs(data, user):
     request.user = user
 
     for index, row in data.iterrows():
+        print(f'{round(index/71*100, ndigits=3)}%')
         data = {}
         try:
             org = Organization.objects.create(
@@ -146,9 +220,21 @@ def parse_data(data, user):
         base_law_instances = Change.objects.bulk_stage_updated(laws, request)
 
 
-def migrate(user_id=None):
+def migrate():
+    try:
+        user = User.objects.create_user(
+            email='migration@bot.com',
+            name='Migration Bot',
+            password='Migrate123',
+        )
+    except:
+        user = User.objects.get(id=1)
+
     data = pd.read_excel('data/final_diputados.xlsx', sheet_name=0)
-    user = User.objects.get(id=user_id)
 
     create_orgs(data, user)
     parse_data(data, user)
+
+    data = pd.read_excel('data/final_diputados.xlsx', sheet_name=1)
+
+    create_controversies(data, user)

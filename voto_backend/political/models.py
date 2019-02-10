@@ -231,7 +231,7 @@ class Achievement(TrackedWorkshopModel):
 
 
 class Controversy(TrackedWorkshopModel):
-    brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
+    brief_description = models.CharField(_('Description'), max_length=2048, blank=True, null=True)
     type = models.CharField(_('Type'), choices=CATEGORIES, max_length=128, blank=True, null=True)
 
     individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
