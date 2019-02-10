@@ -21,17 +21,17 @@ def name_regex(name):
     return full_name, alias
 
 
-def laws_regex(laws_string):
+def laws_regex(law_string):
     try:
-        separate_laws = laws_string.split('\n')
-        law_number_regex = re.compile("^Ley (\d+)|( /(\d+))")
+        separate_laws = law_string.split('\n')
+        law_number_regex = re.compile("^Ley (\d+)( /(\d+))|(  /(\d+))")
         laws_compendium = []
         for raw_law in separate_laws:
             try:
                 full_meta = law_number_regex.match(raw_law).group(0)
                 law_number = law_number_regex.match(raw_law).group(1)
                 law_description = re.sub(full_meta, "", raw_law)
-                law = {'law_number': law_number, 'law_description': law_description}
+                law = {'law_number' : law_number, 'law_description': law_description}
                 laws_compendium.append(law)
             except AttributeError:
                 # print("Oh ----------- " + raw_law)
@@ -39,9 +39,7 @@ def laws_regex(laws_string):
             except IndexError:
                 # print("Oh ----------- " + raw_law)
                 pass
-
         return laws_compendium
-
     except AttributeError:
         # print(laws_array)
         pass
@@ -79,7 +77,7 @@ def parse_data(data, user):
     request.user = user
     for index, row in data.iterrows():
         print(f'-------------------------------------------------------------')
-        print(f'Migrating row {index}                               {index/71*100}%')
+        print(f'Migrating row {index}        {round(index/71*100, ndigits=3)}%')
         print(f'-------------------------------------------------------------\n')
         data = {}
         if isinstance(row['Facebook'], str) and len(row['Facebook']) > 5:

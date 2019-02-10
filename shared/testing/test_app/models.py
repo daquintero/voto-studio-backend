@@ -57,9 +57,8 @@ class BasicModel(TrackedWorkshopModel):
 
     # This model has 10 basic fields, but it
     # inherits from ``TrackedWorkshopModel``
-    # which adds a further 4 (A JSONField is
-    # not counted as a basic field).
-    basic_field_count = 10 + 4
+    # which adds a further 5.
+    basic_field_count = 10 + 5
 
     # This model has 1 related field, although
     # ``TrackedWorkshopModel`` adds 3 they are
