@@ -4,7 +4,7 @@ import string
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from voto_backend.changes.models import TrackedWorkshopModel
+from voto_studio_backend.changes.models import TrackedWorkshopModel
 
 
 TEST_CHOICES = (

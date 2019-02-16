@@ -2,9 +2,9 @@ import pandas as pd
 import re
 
 from django.test import RequestFactory
-from voto_backend.changes.models import Change
-from voto_backend.political.models import Individual, Law, Organization, Controversy
-from voto_backend.users.models import User
+from voto_studio_backend.changes.models import Change
+from voto_studio_backend.political.models import Individual, Law, Organization, Controversy
+from voto_studio_backend.users.models import User
 
 
 def name_regex(name):

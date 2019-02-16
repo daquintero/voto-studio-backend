@@ -2,7 +2,7 @@ import time
 
 from django.conf import settings
 from django.test import TestCase
-from voto_backend.search.indexing import bulk_indexing, clear_indices
+from voto_studio_backend.search.indexing import bulk_indexing, clear_indices
 
 
 class ESTestCase(TestCase):

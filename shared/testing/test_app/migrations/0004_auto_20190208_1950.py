@@ -2,7 +2,7 @@
 
 import django.contrib.postgres.fields.jsonb
 from django.db import migrations, models
-import voto_backend.changes.models
+import voto_studio_backend.changes.models
 
 
 class Migration(migrations.Migration):
@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='basicmodel',
             name='order',
-            field=django.contrib.postgres.fields.jsonb.JSONField(blank=True, default=voto_backend.changes.models.get_order_default, verbose_name='Media Content Order'),
+            field=django.contrib.postgres.fields.jsonb.JSONField(blank=True, default=voto_studio_backend.changes.models.get_order_default, verbose_name='Media Content Order'),
         ),
         migrations.AddField(
             model_name='basicmodel',

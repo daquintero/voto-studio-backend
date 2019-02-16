@@ -8,10 +8,13 @@ elasticsearch==6.3.1
 elasticsearch-dsl==6.3.1
 pandas==0.24.1
 xlrd==1.2.0
+channels==2.1.7
+channels-redis==2.3.3
+pywin32==224
 
 # Django
 # ------------------------------------------------------------------------------
-django==2.0.10  # pyup: < 2.1  # https://www.djangoproject.com/
+django==2.1.7  # pyup: < 2.1  # https://www.djangoproject.com/
 django-environ==0.4.5  # https://github.com/joke2k/django-environ
 django-model-utils==3.1.2  # https://github.com/jazzband/django-model-utils
 django-allauth==0.38.0  # https://github.com/pennersr/django-allauth

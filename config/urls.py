@@ -13,15 +13,15 @@ urlpatterns = [
     # User management
     path(
         "users/",
-        include("voto_backend.users.urls", namespace="users"),
+        include("voto_studio_backend.users.urls", namespace="users"),
     ),
     path(
         "forms/",
-        include("voto_backend.forms.urls", namespace="forms"),
+        include("voto_studio_backend.forms.urls", namespace="forms"),
     ),
     path(
         "media/",
-        include("voto_backend.media.urls", namespace="media"),
+        include("voto_studio_backend.media.urls", namespace="media"),
     ),
 ] + static(
     settings.MEDIA_URL, document_root=settings.MEDIA_ROOT

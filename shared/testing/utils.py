@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from functools import wraps
 from rest_framework.authtoken.models import Token
 from .test_app.models import BasicModel
-from voto_backend.users.models import User
+from voto_studio_backend.users.models import User
 
 
 def get_field(field_name, fields):

@@ -4,8 +4,8 @@ Base settings to build other settings files upon.
 
 import environ
 
-ROOT_DIR = environ.Path(__file__) - 3  # (voto_backend/config/settings/base.py - 3 = voto_backend/)
-APPS_DIR = ROOT_DIR.path('voto_backend')
+ROOT_DIR = environ.Path(__file__) - 3  # (voto_studio_backend/config/settings/base.py - 3 = voto_backend/)
+APPS_DIR = ROOT_DIR.path('voto_studio_backend')
 env = environ.Env()
 
 READ_DOT_ENV_FILE = env.bool('DJANGO_READ_DOT_ENV_FILE', default=False)
@@ -58,15 +58,15 @@ THIRD_PARTY_APPS = [
     'channels',
 ]
 LOCAL_APPS = [
-    'voto_backend.users',
-    'voto_backend.permissions',
-    'voto_backend.changes',
-    'voto_backend.forms',
-    'voto_backend.search',
-    'voto_backend.spatial',
-    'voto_backend.media',
-    'voto_backend.corruption',
-    'voto_backend.political',
+    'voto_studio_backend.users',
+    'voto_studio_backend.permissions',
+    'voto_studio_backend.changes',
+    'voto_studio_backend.forms',
+    'voto_studio_backend.search',
+    'voto_studio_backend.spatial',
+    'voto_studio_backend.media',
+    'voto_studio_backend.corruption',
+    'voto_studio_backend.political',
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
