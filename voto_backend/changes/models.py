@@ -9,8 +9,10 @@ from django.db.models import Q, OneToOneRel
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from shared.utils import hidden_fields
 from voto_backend.forms.models import InfoMixin
 from voto_backend.search.models import IndexingManager, IndexingMixin
+from voto_backend.permissions.models import PermissionsBaseModel
 
 
 STUDIO_DB = settings.STUDIO_DB
@@ -268,22 +270,7 @@ class Change(models.Model):
         raise NotImplementedError('The revert functionality is yet to be implemented.')
 
 
-BASE_HIDDEN_FIELDS = (
-    'id',
-    'user',
-    'tracked',
-    'date_created',
-    'order',
-)
-
-
-def hidden_fields(fields_tuple):
-    if not isinstance(fields_tuple, tuple):
-        raise ValueError('Provide a tuple of hidden fields.')
-    return BASE_HIDDEN_FIELDS + fields_tuple
-
-
-class TrackedModel(models.Model):
+class TrackedModel(PermissionsBaseModel):
     """
     Adds several fields a model to integrate it with the changes app.
     If a model inherits from this then its changes will be tracked.
@@ -298,7 +285,7 @@ class TrackedModel(models.Model):
     search = IndexingManager()
 
     read_only_fields = ('date_created', 'user',)
-    hidden_fields = BASE_HIDDEN_FIELDS
+    hidden_fields = hidden_fields()
 
     class Meta:
         abstract = True
@@ -328,22 +315,81 @@ def get_order_default():
     }
 
 
+RELATIONSHIPS = 'rels'
+REFERENCES = 'refs'
+
+
+def get_rels_dict_default(fields):
+    return {
+            field.name: {RELATIONSHIPS: [], REFERENCES: []}
+            for field in fields
+        }
+
+
+class TrackedWorkshopModelManager(models.Manager):
+    def _get_many_to_many(self):
+        # Get all many_to_many fields
+        many_to_many_fields = [field for field in self.model._meta.get_fields()
+                               if field.many_to_many]
+        # Remove all hidden fields
+        many_to_many_fields = [field for field in many_to_many_fields
+                               if field.name not in self.model.hidden_fields]
+
+        return many_to_many_fields
+
+    def create(self, **kwargs):
+        instance = super().create(self, **kwargs)
+        instance.rels_dict = get_rels_dict_default(self._get_many_to_many())
+        instance.save(using=settings.STUDIO_DB)
+
+        return instance
+
+    def get_or_create(self, **kwargs):
+        instance, new = super().get_or_create(**kwargs)
+        if new:
+            instance.rels_dict = get_rels_dict_default(self._get_many_to_many())
+            instance.save(using=settings.STUDIO_DB)
+
+        return instance, new
+
+
 class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
     statistics = JSONField(_('Statistics'), blank=True, null=True, default=list)
+
+    rels_dict = JSONField(_('Relationships Dictionary'), blank=True, default=dict)
 
     order = JSONField(_('Media Content Order'), blank=True, default=get_order_default)
     images = models.ManyToManyField('media.Image', blank=True)
     videos = models.ManyToManyField('media.Video', blank=True)
     resources = models.ManyToManyField('media.Resource', blank=True)
 
-    read_only_fields = ('date_created', 'user',)
+    objects = TrackedWorkshopModelManager()
 
-    hidden_fields = hidden_fields(('order',))
+    read_only_fields = ('date_created', 'user',)
+    hidden_fields = hidden_fields(fields_tuple=('order',))
 
     class Meta:
         abstract = True
+
+    def _get_field_value(self, field=None, field_name=None):
+        _field_name = field_name
+        if field is not None:
+            _field_name = field.name
+        return getattr(self, _field_name)
+
+    def _add_to_rels_dict(self, field, instance, rel_level):
+        rels_dict = self.rels_dict
+        rels_dict[field.name][rel_level].append(instance.id)
+        self.rels_dict = rels_dict
+        self.save(using=settings.STUDIO_DB)
+
+    def _remove_from_rels_dict(self, field, instance, rel_level):
+        rels_dict = self.rels_dict
+        rels_dict[field.name][rel_level].remove(instance.id)
+        self.rels_dict = rels_dict
+        self.save(using=settings.STUDIO_DB)
 
     def set_order(self, order, media_type):
         order_dict = self.order
@@ -371,6 +417,22 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
         order = [*order[0:source_index], *order[source_index + 1:]]
         order.insert(result['destination']['index'], result['draggable_id'])
         self.set_order(order, media_type)
+
+    def add_rel(self, field, instance):
+        self._get_field_value(field=field).add(instance)
+        self._add_to_rels_dict(field, instance, RELATIONSHIPS)
+
+    def remove_rel(self, field, instance):
+        self._get_field_value(field=field).remove(instance)
+        self._remove_from_rels_dict(field, instance, RELATIONSHIPS)
+
+    def add_ref(self, field, instance):
+        self._get_field_value(field=field).add(instance)
+        self._add_to_rels_dict(field, instance, REFERENCES)
+
+    def remove_ref(self, field, instance):
+        self._get_field_value(field=field).remove(instance)
+        self._remove_from_rels_dict(field, instance, REFERENCES)
 
 
 class ChangeGroupManager(models.Manager):

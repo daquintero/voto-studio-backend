@@ -8,7 +8,7 @@ def _is_numeric(model_class, table_head):
 
 
 class InfoMixin:
-    def _get_field_value(self, descriptor):
+    def _get_descriptor_value(self, descriptor):
         field = getattr(self, descriptor)
 
         if hasattr(field, 'choices'):
@@ -31,7 +31,7 @@ class InfoMixin:
             'id': self.id,
             'descriptors': [{
                 'name': d,
-                'value': self._get_field_value(d),
+                'value': self._get_descriptor_value(d),
             } for d in table_descriptors],
             'user_email': self.user.email,
             'user_id': self.user.id,

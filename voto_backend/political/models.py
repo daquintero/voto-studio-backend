@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from voto_backend.changes.models import TrackedWorkshopModel, hidden_fields
+from shared.utils import hidden_fields
+from voto_backend.changes.models import TrackedWorkshopModel
 
 
 CATEGORIES = (
@@ -140,7 +141,7 @@ class Individual(TrackedWorkshopModel):
         'non_corruption_related_funds',
     )
 
-    hidden_fields = hidden_fields(('source',))
+    hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
 class Organization(TrackedWorkshopModel):
@@ -184,7 +185,7 @@ class Organization(TrackedWorkshopModel):
         'related': (),
     }
 
-    hidden_fields(('source',))
+    hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
 class Promise(TrackedWorkshopModel):
@@ -285,4 +286,4 @@ class ElectoralPeriod(TrackedWorkshopModel):
         'related': (),
     }
 
-    hidden_fields = hidden_fields(('source',))
+    hidden_fields = hidden_fields(fields_tuple=('source',))

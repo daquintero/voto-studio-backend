@@ -38,6 +38,7 @@ USE_TZ = True
 ROOT_URLCONF = 'config.urls'
 # https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.routing.application'
 
 # APPS
 # ------------------------------------------------------------------------------
@@ -54,9 +55,11 @@ THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'channels',
 ]
 LOCAL_APPS = [
     'voto_backend.users',
+    'voto_backend.permissions',
     'voto_backend.changes',
     'voto_backend.forms',
     'voto_backend.search',
@@ -243,6 +246,17 @@ WORKSHOP_MODELS = (
     'political.Achievement',
     'political.Controversy',
     'political.ElectoralPeriod',
+)
+
+BASE_HIDDEN_FIELDS = (
+    'id',
+    'user',
+    'tracked',
+    'date_created',
+    'order',
+    'permitted_users',
+    'permissions_dict',
+    'rels_dict',
 )
 
 MODELS_TO_INDEX = ()

@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from voto_backend.changes.models import TrackedWorkshopModel, hidden_fields
+from shared.utils import hidden_fields
+from voto_backend.changes.models import TrackedWorkshopModel
 
 
 class InformativeSnippet(TrackedWorkshopModel):
@@ -18,7 +19,7 @@ class InformativeSnippet(TrackedWorkshopModel):
     corruption_cases = models.ManyToManyField('corruption.CorruptionCase', blank=True)
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
     individuals = models.ManyToManyField('political.Individual', blank=True)
-    law = models.ManyToManyField('political.Law', blank=True)
+    laws = models.ManyToManyField('political.Law', blank=True)
     controversies = models.ManyToManyField('political.Controversy', blank=True)
 
     table_descriptors = (
@@ -70,7 +71,7 @@ class CorruptionCase(TrackedWorkshopModel):
         'related': (),
     }
 
-    hidden_fields = hidden_fields(('source',))
+    hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
 class FinancialItem(TrackedWorkshopModel):

@@ -5,17 +5,17 @@ from django.conf import settings
 from django.db import IntegrityError
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, ManyToManyRel
 from django.shortcuts import get_object_or_404
-from rest_framework import authentication
-from rest_framework import status
+from rest_framework import authentication, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from shared.api.parsers import camel_to_underscore, underscore_to_camel
 from shared.utils import get_model
 from . import serializers
-from voto_backend.changes.models import Change, ChangeGroup
-from voto_backend.changes.serializers import ChangeGroupSerializer
+from voto_backend.changes.models import Change
 from voto_backend.media.models import Image, Video, Resource
 from voto_backend.media.serializers import ImageSerializer, VideoSerializer, ResourceSerializer
+from voto_backend.permissions.shortcuts import get_object_or_403, permission_denied_message
 from voto_backend.spatial.models import DataSet
 
 
@@ -79,6 +79,29 @@ def get_name(field):
         return field.related_name
 
 
+def get_field(field_name, model=None, instance=None):
+    if model and instance:
+        raise ValueError("You can't set bot the 'instance' and the 'model' arguments.")
+
+    model_class = model if model else instance._meta.model
+    field = model_class._meta.get_field(field_name)
+
+    return field
+
+
+def get_fields(model=None, instance=None):
+    if model and instance:
+        raise ValueError("You can't set bot the 'instance' and the 'model' arguments.")
+
+    model_class = model if model else instance._meta.model
+    fields = [
+        f for f in model_class._meta.get_fields()
+        if f.name not in model_class.hidden_fields
+    ]
+
+    return fields
+
+
 def get_field_value(instance, field=None, field_name=None):
     """
     Depending on what side of a relationship an instance is, accessing the related instance(s)
@@ -86,7 +109,7 @@ def get_field_value(instance, field=None, field_name=None):
     ``NAME_OF_FIELD_set``.
     """
     if field_name is not None:
-        field = instance._meta.model._meta.get_field(field_name)
+        field = get_field(field_name, instance=instance)
 
     if is_forward_rel(field):
         return getattr(instance, field.name)
@@ -233,19 +256,6 @@ def parse_value(field, value):
     return value
 
 
-def get_fields(model=None, instance=None):
-    if model and instance:
-        raise ValueError("Invalid arguments. You can't set bot the 'instance' and the 'model' arguments.")
-
-    model_class = model if model else instance._meta.model
-    fields = [
-        f for f in model_class._meta.get_fields()
-        if f.name not in model_class.hidden_fields
-    ]
-
-    return fields
-
-
 def get_basic_fields(model=None, instance=None):
     hidden_fields = model.hidden_fields if model else instance._meta.model.hidden_fields
     basic_fields = [
@@ -293,14 +303,18 @@ class BuildFormAPI(APIView):
         Return the data needed to build the form for a given model.
         The app label and model name are provided in the query string.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         app_label = request.GET.get('al')
         model_name = request.GET.get('mn')
         model_class = get_model(app_label=app_label, model_name=model_name)
         using = settings.STUDIO_DB if not request.GET.get('using') else request.GET.get('using')
         new = request.GET.get('id') == 'new'
 
-        instance = get_object_or_404(
+        instance = get_object_or_403(
             model_class,
+            (request.user, 'read'),
             id=request.GET.get('id'),
         ) if not new else None
 
@@ -391,8 +405,20 @@ class UpdateBasicFieldsAPI(APIView):
         """
         Handle the updating of all basic fields of an existing instance.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         app_label, model_name = request.data['model_label'].split('.')
         model_class, (instance, new) = get_or_create_instance(app_label, model_name, request.data['id'], request)
+
+        if not new:
+            if not instance.can_write(request.user):
+                raise PermissionDenied({
+                    'message': f'You do not have {operation} permission on this content.',
+                    'permitted': False,
+                    'id': instance.id,
+                    'model_label': instance._meta.model._meta.label,
+                })
 
         basic_fields = get_basic_fields(model=model_class)
         values = request.data['values']
@@ -440,16 +466,16 @@ class RelatedFieldsAPI(APIView):
         """
         Given a parent and related model return the related instances.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         using = settings.STUDIO_DB if not request.GET.get('using') else request.GET.get('using')
 
         parent_app_label = request.GET.get('pal')
         parent_model_name = request.GET.get('pmn')
         parent_model_class = get_model(app_label=parent_app_label, model_name=parent_model_name)
         parent_instance_id = request.GET.get('pid')
-        parent_instance = None
-
-        if not parent_instance_id == 'new':
-            parent_instance = get_object_or_404(parent_model_class, id=parent_instance_id)
+        parent_instance = get_object_or_403(parent_model_class, (request.user, 'read'), id=parent_instance_id)
 
         related_app_label = request.GET.get('ral')
         related_model_name = request.GET.get('rmn')
@@ -488,6 +514,10 @@ class UpdateMediaFieldAPI(APIView):
 
     @staticmethod
     def post(request):
+        """
+        Provide users with the capability to add images, videos and
+        resources to pieces of content in VotoStudio.
+        """
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
@@ -498,7 +528,7 @@ class UpdateMediaFieldAPI(APIView):
         update_type = request.data.get('update_type')
 
         model_class = get_model(model_label=model_label)
-        instance = get_object_or_404(model_class, id=instance_id)
+        instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
 
         media_instances = MEDIA_MODEL_MAPPINGS[media_type].objects.filter(id__in=media_ids)
         field_value = get_field_value(instance, field_name=media_type)
@@ -531,6 +561,11 @@ class UpdateMediaOrderAPI(APIView):
 
     @staticmethod
     def post(request):
+        """
+        The first media instance in its respective order list in
+        a piece of content's media order dict is "primary". This
+        endpoint handles the persistence of media orders.
+        """
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
@@ -540,9 +575,15 @@ class UpdateMediaOrderAPI(APIView):
         media_type = request.data.get('media_type')
 
         model_class = get_model(model_label=model_label)
-        instance = get_object_or_404(model_class, id=instance_id)
-        instance.update_order(result, media_type)
+        instance = get_object_or_403(model_class, id=instance_id)
 
+        if not instance.can_write(request.user):
+            return Response({
+                'message': 'User does not have permission to edit this piece of content.',
+                'permitted': False,
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+        instance.update_order(result, media_type)
         base_instance = Change.objects.stage_updated(instance, request)
 
         response = {
@@ -566,23 +607,37 @@ class UpdateRelatedFieldAPI(APIView):
         """
         Handle the updating of all related fields of an existing instance.
         """
-        app_label, model_name = request.data['model_label'].split('.')
-        model_class, (instance, new) = get_or_create_instance(app_label, model_name, request.data['id'], request)
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        # TODO: do we need to send the related model name, can we not just get it from the field itself?
+        model_label = request.data['model_label']
+        model_class = get_model(model_label=model_label)
+        instance = get_object_or_403(model_class, (request.user, 'write'), id=request.data['id'])
+
         related_app_label, related_model_name = request.data['related_model_label'].split('.')
         related_model_class = get_model(app_label=related_app_label, model_name=related_model_name)
         related_instances = related_model_class.objects.filter(id__in=request.data.get('related_ids'))
 
         update_type = request.data['update_type']
-        field_name = camel_to_underscore(request.data['field_name'])
-        field_value = get_field_value(instance, field_name=field_name)
+        rel_level = request.data['rel_level']
 
+        field_name = camel_to_underscore(request.data['field_name'])
         for related_instance in related_instances:
-            if update_type == 'add':
-                field_value.add(related_instance)
-            elif update_type == 'remove':
-                field_value.remove(related_instance)
+            if rel_level == 'rel':
+                if related_instance.can_relate(request.user):
+                    instance.add_rel(get_field(field_name, instance=instance), related_instance)
+                else:
+                    raise PermissionDenied(permission_denied_message({
+                        'message': 'You do not have rel permission on this content.',
+                    }, instance=instance))
+            if rel_level == 'ref':
+                    instance.add_ref(get_field(field_name, instance=instance), related_instance)
+
+        # for related_instance in related_instances:
+        #     if update_type == 'add':
+        #         field_value.add(related_instance)
+        #     elif update_type == 'remove':
+        #         field_value.remove(related_instance)
 
         response = {
             'id': instance.id,
@@ -600,10 +655,7 @@ class UpdateRelatedFieldAPI(APIView):
             },
         }
 
-        if new:
-            Change.objects.stage_created(instance, request)
-        else:
-            Change.objects.bulk_stage_updated([instance, *related_instances], request)
+        Change.objects.bulk_stage_updated([instance, *related_instances], request)
 
         return Response({'result': response}, status=status.HTTP_200_OK)
 
@@ -617,11 +669,15 @@ class InstanceDetailAPI(APIView):
         """
         Get the details for a given instance.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         app_label = request.GET.get('al')
         model_name = request.GET.get('mn')
         instance_id = request.GET.get('id')
 
-        model_class, (instance, new) = get_or_create_instance(app_label, model_name, instance_id, request)
+        model_class = get_model(app_label=app_label, model_name=model_name)
+        instance = get_object_or_403(model_class, (request.user, 'read'), id=instance_id)
 
         return Response(
             {'item': serializers.GeneralDetailSerializer(instance, model_class=model_class).data},
@@ -638,34 +694,19 @@ class PublishInstanceAPI(APIView):
         """
         Given an instance, publish it.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         app_label = request.GET.get('al')
         model_name = request.GET.get('mn')
         instance_id = request.GET.get('id')
 
         model_class = get_model(app_label=app_label, model_name=model_name)
-        instance = get_object_or_404(model_class, id=instance_id)
+        instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_id)
 
         committed_changes = Change.objects.commit_for_instance(instance, request)
 
         return Response({'changes_committed': [c.id for c in committed_changes]}, status=status.HTTP_200_OK)
-
-
-class PublishContentAPI(APIView):
-    """
-    Class providing API endpoints used to publish changes.
-    """
-    @staticmethod
-    def post(request):
-        """
-        Given a user publish all changes since the last publish event triggered.
-        """
-        changes = Change.objects.filter(user=request.user, committed=False).order_by('date_created')
-        change_group = ChangeGroup.objects.bulk_commit(changes, request)
-
-        if not change_group['published']:
-            return Response({'error': change_group['message']}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(ChangeGroupSerializer(change_group['change_group']).data, status=status.HTTP_200_OK)
 
 
 class DeleteInstanceAPI(APIView):
@@ -677,12 +718,15 @@ class DeleteInstanceAPI(APIView):
         """
         Delete a given instance.
         """
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         app_label = request.data.get('app_label')
         model_name = request.data.get('model_name')
         instance_id = request.data.get('id')
         model_class = get_model(app_label=app_label, model_name=model_name)
 
-        instance = get_object_or_404(model_class, id=instance_id)
+        instance = get_object_or_403(model_class, (request.user, 'delete'), id=instance_id)
         instance = instance.delete(fake=True)
         instance = Change.objects.stage_deleted(instance, request)
         item = serializers.GeneralDetailSerializer(instance, model_class=model_class).data
@@ -696,6 +740,9 @@ class InstanceListAPI(APIView):
     """
     @staticmethod
     def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         model_label = request.GET.get('ml')
         model_class = get_model(model_label=model_label)
 
@@ -709,8 +756,10 @@ class InstanceListAPI(APIView):
             related_instances = get_field_value(instance, field_name=field_name).all()
             must_not = [instance.id for instance in related_instances]
 
+        # TODO: Elasticsearch implementation needs to be updated to return all instances where the user is in the permitted users.
+
         instances = model_class.search.filter(
-            must={'tracked': True},
+            must={'tracked': True, 'user': request.user.id},
             must_not={'id': must_not},
             page=request.GET.get('page'),
             size=request.GET.get('size'),
@@ -736,6 +785,9 @@ class RelatedInstanceListAPI(APIView):
     """
     @staticmethod
     def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         related_model_label = request.GET.get('rml')
         related_model_class = get_model(model_label=related_model_label)
 
@@ -777,6 +829,9 @@ class InstanceFinderAPI(APIView):
     """
     @staticmethod
     def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         ret = []
         options = []
         for model_label in WORKSHOP_MODELS:
@@ -804,6 +859,9 @@ class LocationPickerAPI(APIView):
     """
     @staticmethod
     def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
         data_set = get_object_or_404(DataSet.objects.using(settings.SPATIAL_DB), location_id_name='CIRCUITO')
         response = {
             'data_set': {

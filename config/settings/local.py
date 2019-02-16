@@ -106,6 +106,15 @@ DATABASES = {
     },
 }
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
+
 if os.name == 'nt':
     import platform
     OSGEO4W = r"C:\OSGeo4W"

@@ -374,56 +374,6 @@ class UpdateRelatedFieldAPITests(TestCase):
         self.assertEqual(list(self.instance.many_to_many_field.all()), [])
 
 
-class PublishContentAPITests(ESTestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-
-    @create_test_user
-    def test_post(self, user):
-        self.client.defaults['HTTP_AUTHORIZATION'] = auth_header(user)
-        request = self.factory.post(reverse('forms:publish'))
-        request.user = user
-        random.seed('PublishContentAPITests::test_post')
-
-        instance = create_instance(user=user)
-        base_instance = Change.objects.stage_created(instance, request)
-
-        related_instance = create_instance(user=user)
-        base_related_instance = Change.objects.stage_created(related_instance, request)
-
-        changes = {
-            'char_field': create_random_string(),
-            'text_field': create_random_string(k=400),
-            'one_to_one_field': base_related_instance,
-            'foreign_key_field': base_related_instance,
-            'many_to_many_field': base_related_instance,
-        }
-
-        base_instance.char_field = changes['char_field']
-        base_instance = Change.objects.stage_updated(base_instance, request)
-
-        base_instance.text_field = changes['text_field']
-        base_instance = Change.objects.stage_updated(base_instance, request)
-
-        base_instance.one_to_one_field = changes['one_to_one_field']
-        base_instance = Change.objects.stage_updated(base_instance, request)
-
-        base_instance.foreign_key_field = changes['foreign_key_field']
-        base_instance = Change.objects.stage_updated(base_instance, request)
-
-        base_instance.many_to_many_field.set([changes['many_to_many_field']])
-        base_instance = Change.objects.stage_updated(base_instance, request)
-
-        base_instance.save(using=settings.STUDIO_DB)
-
-        time.sleep(2)
-        response = self.client.post(reverse('forms:publish'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['user_email'], user.email)
-        self.assertEqual(response.data['changes_committed_count'], len(changes)+2)
-
-
 class DeleteInstanceAPITests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
