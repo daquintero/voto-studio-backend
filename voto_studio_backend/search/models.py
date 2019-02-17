@@ -50,11 +50,19 @@ class IndexingMixin:
     Mixin that adds methods allowing a model
     to be indexed by Elasticsearch.
     """
-    def get_kwargs(self, model_label):
+    def get_kwargs(self):
         from voto_studio_backend.forms.views import parse_value
 
-        fields = get_fields(model_label)
-        return {f.name: parse_value(f, getattr(self, f.name)) for f in fields}
+        fields = [field for field in get_fields(model_class=self) if not field.name == 'password']
+        ret = {f.name: parse_value(f, getattr(self, f.name)) for f in fields}
+
+        if hasattr(self, 'search_method_fields'):
+            for method_field_name in self.search_method_fields:
+                ret.update({
+                    method_field_name: getattr(self, f'get_{method_field_name}')()
+                })
+
+        return ret
 
     def create_document(self, using=settings.STUDIO_DB):
         model_label = self._meta.label
@@ -63,7 +71,7 @@ class IndexingMixin:
             model_label=model_label,
             user=getattr(getattr(self, 'user', None), 'id', None),
             table_values=self.get_table_values(),
-            **self.get_kwargs(model_label),
+            **self.get_kwargs(),
             refresh=True,
         )
         obj.save(index=build_index_name(model_label, using=using))
@@ -76,6 +84,7 @@ class IndexingMixin:
         document = document_class.get(id=self.id, index=build_index_name(model_label, using=using))
         document.update(
             table_values=self.get_table_values(),
+            **self.get_kwargs(),
             refresh=True,
         )
 

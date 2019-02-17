@@ -4,6 +4,8 @@ from django.dispatch import receiver
 
 
 def to_index(sender):
+    if sender._meta.label == settings.AUTH_USER_MODEL:
+        return True
     return (sender._meta.label in settings.MODELS_TO_INDEX and sender.tracked)
 
 

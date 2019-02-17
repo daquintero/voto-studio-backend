@@ -10,17 +10,19 @@ class InformativeSnippet(TrackedWorkshopModel):
     The basic source of information that can map to other relationships, with separate images, etc.
     An informative snippet is basically a small piece of news that can be related on the grand scheme of things.
     """
+    related_name = 'informative_snippets'
+
     title = models.CharField(_('Title'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
 
     twitter_feed = models.URLField(_('Twitter Feed URL'), blank=True, null=True)
 
-    corruption_cases = models.ManyToManyField('corruption.CorruptionCase', blank=True)
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
-    individuals = models.ManyToManyField('political.Individual', blank=True)
-    laws = models.ManyToManyField('political.Law', blank=True)
-    controversies = models.ManyToManyField('political.Controversy', blank=True)
+    corruption_cases = models.ManyToManyField('corruption.CorruptionCase', blank=True, related_name=related_name)
+    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
+    individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
+    laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
+    controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
 
     table_descriptors = (
         'title',
@@ -48,12 +50,14 @@ class CorruptionCase(TrackedWorkshopModel):
     have different corruption evidence moments related to it, which are the mapped
     corruption instances. Similarly, it is still possible to map everything else.
     """
+    related_name = 'corruption_cases'
+
     title = models.CharField(_('Title'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
 
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
-    controversies = models.ManyToManyField('political.Controversy', blank=True)
+    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
+    controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
 
     table_descriptors = (
         'title',

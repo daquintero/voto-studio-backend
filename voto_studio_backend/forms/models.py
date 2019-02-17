@@ -18,6 +18,15 @@ class InfoMixin:
 
         return ret
 
+    def _get_user_info(self):
+        if hasattr(self, 'user'):
+            return {
+                'user_email': self.user.email,
+                'user_id': self.user.id,
+            }
+        else:
+            return {}
+
     def get_table_values(self):
         """
         Return some simple info for the tables in VotoStudio's workshop.
@@ -33,11 +42,10 @@ class InfoMixin:
                 'name': d,
                 'value': self._get_descriptor_value(d),
             } for d in table_descriptors],
-            'user_email': self.user.email,
-            'user_id': self.user.id,
             'app_label': self._meta.app_label,
             'model_name': self._meta.model_name,
             'model_label': self._meta.label,
+            **self._get_user_info(),
         }
 
     def get_table_heads(self, verbose=False):

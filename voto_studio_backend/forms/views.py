@@ -17,6 +17,7 @@ from voto_studio_backend.media.models import Image, Video, Resource
 from voto_studio_backend.media.serializers import ImageSerializer, VideoSerializer, ResourceSerializer
 from voto_studio_backend.permissions.shortcuts import get_object_or_403, permission_denied_message
 from voto_studio_backend.spatial.models import DataSet
+from voto_studio_backend.users.serializers import UserSerializer
 
 
 FIELD_TYPE_MAPPINGS = {
@@ -377,6 +378,11 @@ class BuildFormAPI(APIView):
                                    for _id in instance.get_order(field.name)]
                 media_fields_dict[field.name] = MEDIA_SERIALIZER_MAPPINGS[field.name](media_instances, many=True).data
 
+        if not new:
+            permitted_users = [request.user, *instance.permitted_users.all()]
+        else:
+            permitted_users = [request.user]
+
         response = {
             'new': new,
             'parent_model': {
@@ -389,6 +395,7 @@ class BuildFormAPI(APIView):
             'related_fields': related_fields_list,
             'default_values': default_values,
             'location_id_name': instance.location_id_name if instance else 'Select Data Set',
+            'permitted_users': UserSerializer(permitted_users, many=True).data,
         }
 
         return Response({'form': response}, status=status.HTTP_200_OK)
@@ -414,7 +421,7 @@ class UpdateBasicFieldsAPI(APIView):
         if not new:
             if not instance.can_write(request.user):
                 raise PermissionDenied({
-                    'message': f'You do not have {operation} permission on this content.',
+                    'message': f'You do not have write permission on this content.',
                     'permitted': False,
                     'id': instance.id,
                     'model_label': instance._meta.model._meta.label,
@@ -619,7 +626,7 @@ class UpdateRelatedFieldAPI(APIView):
         related_instances = related_model_class.objects.filter(id__in=request.data.get('related_ids'))
 
         update_type = request.data['update_type']
-
+        rel_level = None
         field_name = camel_to_underscore(request.data['field_name'])
         for related_instance in related_instances:
             if update_type == 'add':
@@ -634,17 +641,12 @@ class UpdateRelatedFieldAPI(APIView):
                 elif rel_level == 'ref':
                         instance.add_ref(get_field(field_name, instance=instance), related_instance)
             elif update_type == 'remove':
-                instance.remove()
-
-        # for related_instance in related_instances:
-        #     if update_type == 'add':
-        #         field_value.add(related_instance)
-        #     elif update_type == 'remove':
-        #         field_value.remove(related_instance)
+                get_field_value(instance, field_name=field_name).remove(related_instance)
 
         response = {
             'id': instance.id,
             'type': update_type,
+            'rel_level': rel_level,
             'field_name': field_name,
             'field': {
                 'model_label': model_class._meta.label,

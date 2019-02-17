@@ -4,6 +4,9 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 
+from voto_studio_backend.forms.models import InfoMixin
+from voto_studio_backend.search.models import IndexingMixin, IndexingManager
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email, name, password=None, both_db=False, **kwargs):
@@ -28,7 +31,7 @@ class UserManager(BaseUserManager):
         return user
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin, InfoMixin, IndexingMixin):
     email = models.EmailField(_('email address'), max_length=255, unique=True)
     name = models.CharField(_('name'), max_length=255)
     is_staff = models.BooleanField(_('staff status'), default=False)
@@ -39,16 +42,33 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True,
         on_delete=models.SET_NULL,
         blank=True,
-        related_name='image_owner'
+        related_name='image_owner',
     )
 
     objects = UserManager()
+    search = IndexingManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name']
 
+    table_descriptors = (
+        'name',
+        'email',
+    )
+
+    detail_descriptors = ()
+
+    search_method_fields = (
+        'profile_picture_url',
+    )
+
     def __str__(self):
         return f"{self.name} <{self.email}>"
+
+    def get_profile_picture_url(self):
+        default_image_url = 'https://s3.amazonaws.com/votoinformado2019/images/default_profile_picture.jpg'
+
+        return self.profile_picture.image.url if self.profile_picture else default_image_url
 
 
 class Researcher(User):

@@ -383,7 +383,7 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
         rels_dict = self.rels_dict
         if rel_level == RELATIONSHIPS:
             ins_rels_dict = instance.rels_dict
-            ins_rels_dict[field.name][RELATIONSHIPS].append(self.id)
+            ins_rels_dict[self._meta.model.related_name][RELATIONSHIPS].append(self.id)
             instance.save(using=settings.STUDIO_DB)
 
         rels_dict[field.name][rel_level].append(instance.id)

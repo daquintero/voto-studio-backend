@@ -63,7 +63,7 @@ def create_document_class(model_label, using=settings.STUDIO_DB):
     """
     Dynamically create an index class for a model we want to enable search on.
     """
-    fields = get_fields(model_label)
+    fields = get_fields(model_label=model_label)
     attr_dict = {f.name: FIELD_MAP[f.get_internal_type()] for f in fields}
     document_class = type(model_label.split('.')[1], (Document,), attr_dict)
     index_class = type('Index', (object,), {'name': build_index_name(model_label, using=using)})
