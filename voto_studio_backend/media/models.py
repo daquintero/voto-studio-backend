@@ -27,7 +27,6 @@ class BaseMediaModel(models.Model):
             for field in fields:
                 instances = getattr(self, f'{field.name}_set').all()
                 for instance in instances:
-                    print(self.id, self.type)
                     instance.reduce_order(self.id, self.type)
 
         super().delete(using=None, keep_parents=keep_parents)

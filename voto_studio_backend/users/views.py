@@ -8,8 +8,6 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from . import models
 from . import serializers
-from voto_studio_backend.forms.views import get_model
-from voto_studio_backend.permissions.shortcuts import get_object_or_403
 
 
 class UserDetailAPI(APIView):
@@ -78,7 +76,7 @@ class UserListAPI(APIView):
     def get(request):
         search_term = request.GET.get('search')
         if search_term is not '':
-            users = models.User.search.filter(search=search_term)
+            users = models.User.search.filter(search=search_term, must_not={'id': request.user.id})
         else:
             users = []
 
@@ -87,20 +85,3 @@ class UserListAPI(APIView):
         }
 
         return Response(response, status=status.HTTP_200_OK)
-
-
-class PermitUserAPI(APIView):
-    @staticmethod
-    def post(request):
-        model_label = request.data['model_label']
-        instance_id = request.data['instance_id']
-
-        model_class = get_model(model_label=model_label)
-        instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
-
-        user_id = request.data['user_id']
-        permission_level = request.data['permission_level']
-
-        instance.permit_user(request.user, permission_level)
-
-        return Response({}, status=status.HTTP_200_OK)

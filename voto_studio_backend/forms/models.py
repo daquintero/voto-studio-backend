@@ -19,7 +19,7 @@ class InfoMixin:
         return ret
 
     def _get_user_info(self):
-        if hasattr(self, 'user'):
+        if hasattr(self, 'user') and self.user is not None:
             return {
                 'user_email': self.user.email,
                 'user_id': self.user.id,

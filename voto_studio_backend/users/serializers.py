@@ -12,7 +12,6 @@ class UserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(min_length=2, max_length=32)
     password = serializers.CharField(min_length=8, write_only=True)
     profile_picture_url = serializers.SerializerMethodField()
-    initials = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         return models.User.objects.create_user(**validated_data)
@@ -23,7 +22,6 @@ class UserSerializer(serializers.ModelSerializer):
             'id',
             'email',
             'name',
-            'initials',
             'password',
             'profile_picture_url',
         )
@@ -32,9 +30,3 @@ class UserSerializer(serializers.ModelSerializer):
         default_image_url = 'https://s3.amazonaws.com/votoinformado2019/images/default_profile_picture.jpg'
 
         return obj.profile_picture.image.url if obj.profile_picture else default_image_url
-
-    def get_initials(self, obj):
-        names = obj.name.split()
-        initials = [name[0].upper() for name in names]
-
-        return ''.join(initials)

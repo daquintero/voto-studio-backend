@@ -16,6 +16,10 @@ urlpatterns = [
         include("voto_studio_backend.users.urls", namespace="users"),
     ),
     path(
+        "permissions/",
+        include("voto_studio_backend.permissions.urls", namespace="permissions"),
+    ),
+    path(
         "forms/",
         include("voto_studio_backend.forms.urls", namespace="forms"),
     ),

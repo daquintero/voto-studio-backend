@@ -319,27 +319,32 @@ RELATIONSHIPS = 'rels'
 REFERENCES = 'refs'
 
 
-def get_rels_dict_default(fields):
-    return {
-            field.name: {RELATIONSHIPS: [], REFERENCES: []}
-            for field in fields
+def get_rels_dict_default(fields=None, single_dict_only=False):
+    single_dict = {
+        RELATIONSHIPS: [],
+        REFERENCES: [],
+    }
+
+    if single_dict_only:
+        return single_dict
+    else:
+        return {
+            field.name: single_dict for field in fields
         }
 
 
 class TrackedWorkshopModelManager(models.Manager):
     def _get_many_to_many(self):
-        # Get all many_to_many fields
         many_to_many_fields = [field for field in self.model._meta.get_fields()
                                if field.many_to_many]
-        # Remove all hidden fields
         many_to_many_fields = [field for field in many_to_many_fields
                                if field.name not in self.model.hidden_fields]
 
         return many_to_many_fields
 
     def create(self, **kwargs):
-        instance = super().create(self, **kwargs)
-        instance.rels_dict = get_rels_dict_default(self._get_many_to_many())
+        instance = super().create(**kwargs)
+        instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
         instance.save(using=settings.STUDIO_DB)
 
         return instance
@@ -347,7 +352,7 @@ class TrackedWorkshopModelManager(models.Manager):
     def get_or_create(self, **kwargs):
         instance, new = super().get_or_create(**kwargs)
         if new:
-            instance.rels_dict = get_rels_dict_default(self._get_many_to_many())
+            instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
             instance.save(using=settings.STUDIO_DB)
 
         return instance, new
@@ -379,21 +384,40 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
             _field_name = field.name
         return getattr(self, _field_name)
 
+    @staticmethod
+    def _flatten_rels_dict(rels_dict):
+        ret = {}
+        for key, inner_rel_dict in rels_dict.items():
+            flattened_inner_rel_dict = {
+                key: {
+                    RELATIONSHIPS: list(set(inner_rel_dict[RELATIONSHIPS])),
+                    REFERENCES: list(set(inner_rel_dict[REFERENCES])),
+                },
+            }
+            ret.update(flattened_inner_rel_dict)
+
+        return ret
+
     def _add_to_rels_dict(self, field, instance, rel_level):
         rels_dict = self.rels_dict
         if rel_level == RELATIONSHIPS:
             ins_rels_dict = instance.rels_dict
             ins_rels_dict[self._meta.model.related_name][RELATIONSHIPS].append(self.id)
+            instance.rels_dict = self._flatten_rels_dict(ins_rels_dict)
             instance.save(using=settings.STUDIO_DB)
 
         rels_dict[field.name][rel_level].append(instance.id)
-        self.rels_dict = rels_dict
+        self.rels_dict = self._flatten_rels_dict(rels_dict)
         self.save(using=settings.STUDIO_DB)
 
-    def _remove_from_rels_dict(self, field, instance, rel_level):
+    def _remove_from_rels_dict(self, field, instance):
         rels_dict = self.rels_dict
-        rels_dict[field.name][rel_level].remove(instance.id)
-        self.rels_dict = rels_dict
+        for rel_level in (RELATIONSHIPS, REFERENCES):
+            try:
+                rels_dict[field.name][rel_level].remove(instance.id)
+            except ValueError:
+                pass
+        self.rels_dict = self._flatten_rels_dict(rels_dict)
         self.save(using=settings.STUDIO_DB)
 
     def set_order(self, order, media_type):
@@ -429,15 +453,14 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
 
     def remove_rel(self, field, instance):
         self._get_field_value(field=field).remove(instance)
-        self._remove_from_rels_dict(field, instance, RELATIONSHIPS)
+        self._remove_from_rels_dict(field, instance)
 
     def add_ref(self, field, instance):
         self._get_field_value(field=field).add(instance)
         self._add_to_rels_dict(field, instance, REFERENCES)
 
     def remove_ref(self, field, instance):
-        self._get_field_value(field=field).remove(instance)
-        self._remove_from_rels_dict(field, instance, REFERENCES)
+        self.remove_rel(field, instance)
 
 
 class ChangeGroupManager(models.Manager):

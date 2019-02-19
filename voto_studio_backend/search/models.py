@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from elasticsearch.exceptions import NotFoundError, RequestError
+from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search, Q
 from .utils import get_fields
 from .indexing import build_index_name, get_document_class
@@ -53,7 +53,12 @@ class IndexingMixin:
     def get_kwargs(self):
         from voto_studio_backend.forms.views import parse_value
 
-        fields = [field for field in get_fields(model_class=self) if not field.name == 'password']
+        excluded_fields = (
+            'password',
+            'permissions_dict',
+        )
+
+        fields = [field for field in get_fields(model_class=self) if field.name not in excluded_fields]
         ret = {f.name: parse_value(f, getattr(self, f.name)) for f in fields}
 
         if hasattr(self, 'search_method_fields'):

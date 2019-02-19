@@ -12,12 +12,11 @@ from rest_framework.response import Response
 from shared.api.parsers import camel_to_underscore, underscore_to_camel
 from shared.utils import get_model
 from . import serializers
-from voto_studio_backend.changes.models import Change
+from voto_studio_backend.changes.models import Change, get_rels_dict_default
 from voto_studio_backend.media.models import Image, Video, Resource
 from voto_studio_backend.media.serializers import ImageSerializer, VideoSerializer, ResourceSerializer
 from voto_studio_backend.permissions.shortcuts import get_object_or_403, permission_denied_message
 from voto_studio_backend.spatial.models import DataSet
-from voto_studio_backend.users.serializers import UserSerializer
 
 
 FIELD_TYPE_MAPPINGS = {
@@ -138,13 +137,22 @@ def get_related_instances(instance, field, using=settings.STUDIO_DB):
     if instance:
         model_class = field.related_model
         instances = model_class.search.filter(
-            must={'tracked': True, 'id': [o.id for o in get_field_value(instance, field=field).all()]},
+            must={
+                'tracked': True,
+                'id': [o.id for o in get_field_value(instance, field=field).all()],
+            },
             using=using,
         )
 
-        return {'instances': instances, 'table_heads': model_class.get_table_heads(model_class, verbose=True)}
+        return {
+            'instances': instances,
+            'table_heads': model_class.get_table_heads(model_class, verbose=True),
+        }
 
-    return {'instances': [], 'table_heads': []}
+    return {
+        'instances': [],
+        'table_heads': [],
+    }
 
 
 def get_options(instance, field, using=settings.STUDIO_DB):
@@ -222,7 +230,7 @@ def get_options(instance, field, using=settings.STUDIO_DB):
     return {}
 
 
-def get_or_create_instance(app_label, model_name, instance_id, request):
+def get_or_create_instance(app_label, model_name, instance_id):
     """
     Get or create an instance of the model class defined by the ``app_label``
     and ``model_name`` parameters. Also return the model class used.
@@ -230,7 +238,7 @@ def get_or_create_instance(app_label, model_name, instance_id, request):
     model_class = get_model(app_label=app_label, model_name=model_name)
     instance_id = instance_id if not (instance_id == 'new') else None
 
-    return model_class, model_class.objects.get_or_create(id=instance_id, user=request.user)
+    return model_class, model_class.objects.get_or_create(id=instance_id)
 
 
 def is_read_only(field):
@@ -288,16 +296,29 @@ def get_related_fields(model=None, instance=None):
             f.related_model not in MEDIA_MODELS)
     ]
 
-    print(MEDIA_MODELS)
-    print(related_fields)
-
     return related_fields
+
+
+def get_meta(model_class):
+    meta = model_class._meta
+    ret = {
+        'model_label': meta.label,
+        'app_label': meta.app_label,
+        'model_name': meta.model_name,
+        'verbose_name': meta.verbose_name,
+        'verbose_name_plural': meta.verbose_name_plural,
+        'verbose_name_plural_title': meta.verbose_name_plural.title(),
+    }
+
+    return ret
 
 
 class BuildFormAPI(APIView):
     """
     Class providing API endpoints for the creation of the workshop forms.
     """
+    authentication_classes = (authentication.TokenAuthentication,)
+
     @staticmethod
     def get(request):
         """
@@ -313,11 +334,9 @@ class BuildFormAPI(APIView):
         using = settings.STUDIO_DB if not request.GET.get('using') else request.GET.get('using')
         new = request.GET.get('id') == 'new'
 
-        instance = get_object_or_403(
-            model_class,
-            (request.user, 'read'),
-            id=request.GET.get('id'),
-        ) if not new else None
+        instance = None
+        if not new:
+            instance = get_object_or_403(model_class, (request.user, 'read'), id=request.GET.get('id'))
 
         basic_fields = get_basic_fields(model=model_class)
         basic_fields_list = [{
@@ -334,14 +353,14 @@ class BuildFormAPI(APIView):
         related_fields_list = [{
             'name': field.name,
             'type': FIELD_TYPE_MAPPINGS[field.get_internal_type()],
-            'model_label': field.related_model._meta.label,
-            'model_name': field.related_model._meta.model_name,
-            'verbose_name': field.related_model._meta.verbose_name,
-            'verbose_name_plural': field.related_model._meta.verbose_name_plural,
-            'verbose_name_plural_title': field.related_model._meta.verbose_name_plural.title(),
             'field_name': field.name,
             'related_instances': get_related_instances(instance, field, using=using),
-            'option': {'label': field.name.replace('_', ' ').title(), 'value': field.related_model._meta.label},
+            'option': {
+                'label': field.name.replace('_', ' ').title(),
+                'value': field.related_model._meta.label
+            },
+            'rels_dict': instance.rels_dict[field.name] if instance else get_rels_dict_default(single_dict_only=True),
+            **get_meta(field.related_model),
         } for field in related_fields]
 
         default_values = {}
@@ -361,12 +380,12 @@ class BuildFormAPI(APIView):
                     if field_value:
                         default_values[field.name] = {
                             'label': str(field_value),
-                            'value': field_value.id
+                            'value': field_value.id,
                         }
                     else:
                         default_values[field.name] = {
                             'label': 'None',
-                            'value': ''
+                            'value': '',
                         }
 
             if instance.location_id_name:
@@ -378,27 +397,20 @@ class BuildFormAPI(APIView):
                                    for _id in instance.get_order(field.name)]
                 media_fields_dict[field.name] = MEDIA_SERIALIZER_MAPPINGS[field.name](media_instances, many=True).data
 
-        if not new:
-            permitted_users = [request.user, *instance.permitted_users.all()]
-        else:
-            permitted_users = [request.user]
-
         response = {
             'new': new,
             'parent_model': {
-                'name': model_class._meta.verbose_name,
-                'model_label': model_class._meta.label,
                 'id': request.GET.get('id') if not new else None,
+                **get_meta(model_class),
             },
             'basic_fields': basic_fields_list,
             'media_fields': media_fields_dict,
             'related_fields': related_fields_list,
             'default_values': default_values,
             'location_id_name': instance.location_id_name if instance else 'Select Data Set',
-            'permitted_users': UserSerializer(permitted_users, many=True).data,
         }
 
-        return Response({'form': response}, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class UpdateBasicFieldsAPI(APIView):
@@ -415,17 +427,15 @@ class UpdateBasicFieldsAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        app_label, model_name = request.data['model_label'].split('.')
-        model_class, (instance, new) = get_or_create_instance(app_label, model_name, request.data['id'], request)
+        model_label = request.data['model_label']
+        instance_id = request.data['id']
+        model_class = get_model(model_label=model_label)
 
-        if not new:
-            if not instance.can_write(request.user):
-                raise PermissionDenied({
-                    'message': f'You do not have write permission on this content.',
-                    'permitted': False,
-                    'id': instance.id,
-                    'model_label': instance._meta.model._meta.label,
-                })
+        new = instance_id == 'new'
+        if new:
+            instance = model_class.objects.create(user=request.user)
+        else:
+            instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
 
         basic_fields = get_basic_fields(model=model_class)
         values = request.data['values']
@@ -440,28 +450,27 @@ class UpdateBasicFieldsAPI(APIView):
                     else:
                         setattr(instance, field.name, values[field.name]['value'])
                 else:
-                    try:
-                        setattr(instance, f'{field.name}_id', values[field.name]['value'])
-                        instance.save(using=settings.STUDIO_DB)
+                    setattr(instance, f'{field.name}_id', values[field.name]['value'])
 
-                    except IntegrityError as e:
-                        return Response({
-                            'result': {'updated': False, 'error': str(e)}
-                        }, status=status.HTTP_400_BAD_REQUEST)
-
-        instance.save(using=settings.STUDIO_DB)
-        base_instance = Change.objects.stage_created_or_updated(instance, request, created=new)
+        try:
+            instance.save(using=settings.STUDIO_DB)
+            base_instance = Change.objects.stage_created_or_updated(instance, request, created=new)
+        except IntegrityError as e:
+            return Response({
+                'result': {
+                    'updated': False,
+                    'error': str(e),
+                }
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         response = {
             'id': base_instance.id,
             'created': new,
             'updated': True,
-            'model_name_verbose': model_class._meta.verbose_name,
-            'app_label': app_label,
-            'model_name': model_name,
+            **get_meta(model_class),
         }
 
-        return Response({'result': response}, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class RelatedFieldsAPI(APIView):
@@ -505,15 +514,14 @@ class RelatedFieldsAPI(APIView):
             size=page_size,
         )
 
-        return Response(
-            {
-                'related_field_instances': instances,
-                'table_heads': related_model_class.get_table_heads(related_model_class) if instances else [],
-                'verbose_name': related_model_class._meta.verbose_name,
-                'field_name': related_field_name,
-            },
-            status=status.HTTP_200_OK,
-        )
+        response = {
+            'related_field_instances': instances,
+            'table_heads': related_model_class.get_table_heads(related_model_class) if instances else [],
+            'verbose_name': related_model_class._meta.verbose_name,
+            'field_name': related_field_name,
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class UpdateMediaFieldAPI(APIView):
@@ -629,19 +637,21 @@ class UpdateRelatedFieldAPI(APIView):
         rel_level = None
         field_name = camel_to_underscore(request.data['field_name'])
         for related_instance in related_instances:
+            field = get_field(field_name, instance=instance)
             if update_type == 'add':
                 rel_level = request.data['rel_level']
                 if rel_level == 'rel':
                     if related_instance.can_write(request.user):
-                        instance.add_rel(get_field(field_name, instance=instance), related_instance)
+                        instance.add_rel(field, related_instance)
                     else:
                         raise PermissionDenied(permission_denied_message({
                             'message': 'You do not have write permission on this content.',
                         }, instance=instance))
                 elif rel_level == 'ref':
-                        instance.add_ref(get_field(field_name, instance=instance), related_instance)
+                        instance.add_ref(field, related_instance)
             elif update_type == 'remove':
                 get_field_value(instance, field_name=field_name).remove(related_instance)
+                instance.remove_rel(field, related_instance)
 
         response = {
             'id': instance.id,
@@ -662,7 +672,7 @@ class UpdateRelatedFieldAPI(APIView):
 
         Change.objects.bulk_stage_updated([instance, *related_instances], request)
 
-        return Response({'result': response}, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class InstanceDetailAPI(APIView):
@@ -684,10 +694,11 @@ class InstanceDetailAPI(APIView):
         model_class = get_model(app_label=app_label, model_name=model_name)
         instance = get_object_or_403(model_class, (request.user, 'read'), id=instance_id)
 
-        return Response(
-            {'item': serializers.GeneralDetailSerializer(instance, model_class=model_class).data},
-            status=status.HTTP_200_OK,
-        )
+        response = {
+            'item': serializers.GeneralDetailSerializer(instance, model_class=model_class).data,
+        }
+
+        return Response(response, status=status.HTTP_200_OK,)
 
 
 class PublishInstanceAPI(APIView):
@@ -711,7 +722,11 @@ class PublishInstanceAPI(APIView):
 
         committed_changes = Change.objects.commit_for_instance(instance, request)
 
-        return Response({'changes_committed': [c.id for c in committed_changes]}, status=status.HTTP_200_OK)
+        response = {
+            'changes_committed': [c.id for c in committed_changes],
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class DeleteInstanceAPI(APIView):
@@ -736,7 +751,11 @@ class DeleteInstanceAPI(APIView):
         instance = Change.objects.stage_deleted(instance, request)
         item = serializers.GeneralDetailSerializer(instance, model_class=model_class).data
 
-        return Response({'item': item}, status=status.HTTP_200_OK)
+        response = {
+            'item': item,
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class InstanceListAPI(APIView):
@@ -772,7 +791,7 @@ class InstanceListAPI(APIView):
             search=request.GET.get('search', False),
         )
 
-        return Response({
+        response = {
             'count': model_class.objects.filter(tracked=True).count(),
             'list': {
                 'instances': instances,
@@ -781,7 +800,9 @@ class InstanceListAPI(APIView):
                 'model_name': model_class._meta.model_name,
                 'verbose_name': model_class._meta.verbose_name,
             }
-        })
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class RelatedInstanceListAPI(APIView):
@@ -816,7 +837,7 @@ class RelatedInstanceListAPI(APIView):
             search=request.GET.get('search', False),
         )
 
-        return Response({
+        response = {
             'count': related_model_class.objects.filter(tracked=True).count(),
             'list': {
                 'instances': instances,
@@ -825,7 +846,9 @@ class RelatedInstanceListAPI(APIView):
                 'model_name': related_model_class._meta.model_name,
                 'verbose_name': related_model_class._meta.verbose_name,
             }
-        })
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class InstanceFinderAPI(APIView):
@@ -854,7 +877,14 @@ class InstanceFinderAPI(APIView):
                 'value': model_label,
             })
 
-        return Response({'finder': {'items': ret, 'options': options}}, status=status.HTTP_200_OK)
+        response = {
+            'finder': {
+                'items': ret,
+                'options': options,
+            },
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class LocationPickerAPI(APIView):
@@ -868,6 +898,7 @@ class LocationPickerAPI(APIView):
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
         data_set = get_object_or_404(DataSet.objects.using(settings.SPATIAL_DB), location_id_name='CIRCUITO')
+
         response = {
             'data_set': {
                 'name': data_set.name,
