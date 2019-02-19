@@ -14,14 +14,6 @@ def create_or_update_document(sender, instance, created, using, **kwargs):
     if not to_index(sender, instance, using=using):
         return
 
-    print('-----------------------------------')
-    print(created)
-    print(sender)
-    print(instance)
-    print(instance.tracked)
-    print(bool(to_index(sender, instance, using=using)))
-    print('-----------------------------------')
-
     if created:
         obj = instance.create_document(using=using)
     else:
