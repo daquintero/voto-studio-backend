@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.shortcuts import get_object_or_404
 from .core import Permission
 from .exceptions import PermissionError
+from voto_studio_backend.users.models import User
 
 
 READ_OPERATION = 'read'
@@ -53,8 +55,14 @@ class PermissionsBaseModel(models.Model):
             raise PermissionError(f"User {user} is not in 'permitted_users'.")
 
     def is_permitted(self, user, operation):
-        # if user.is_researcher and operation == COMMIT_OPERATION:
-        #     return True
+        print(user.is_researcher)
+        if user.is_researcher:
+            if operation == COMMIT_OPERATION:
+                return True
+            migration_bot = get_object_or_404(User, email='migration@bot.com')
+            print(self.user, migration_bot)
+            if self.user == migration_bot:
+                return True
         if user == self.user and not operation == COMMIT_OPERATION:
             return True
         if user in self.permitted_users.all():

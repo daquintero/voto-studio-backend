@@ -145,6 +145,8 @@ class Individual(TrackedWorkshopModel):
 
 
 class Organization(TrackedWorkshopModel):
+    related_name = 'organizations'
+
     name = models.CharField(_('Name'), max_length=2048, default=str, unique=True)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
@@ -157,9 +159,9 @@ class Organization(TrackedWorkshopModel):
     corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
     non_corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
 
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
-    organizations = models.ManyToManyField('self', blank=True)
-    individuals = models.ManyToManyField('political.Individual', blank=True)
+    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
+    organizations = models.ManyToManyField('self', blank=True, related_name=related_name)
+    individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
 
     table_descriptors = (
         'name',
@@ -256,6 +258,8 @@ class Controversy(TrackedWorkshopModel):
 
 
 class ElectoralPeriod(TrackedWorkshopModel):
+    related_name = 'electoral_periods'
+
     individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
@@ -264,8 +268,8 @@ class ElectoralPeriod(TrackedWorkshopModel):
     attendance_percentage = models.FloatField(_('Attendance Percentage'), blank=True, null=True, default=float)
     published_public_finances = models.BooleanField(_('Published Public Finances'), default=False)
 
-    laws = models.ManyToManyField('political.Law', blank=True)
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
+    laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
+    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
 
     table_descriptors = (
         'period',

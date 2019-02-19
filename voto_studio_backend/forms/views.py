@@ -114,7 +114,7 @@ def get_field_value(instance, field=None, field_name=None):
     if is_forward_rel(field):
         return getattr(instance, field.name)
     else:
-        return getattr(instance, f'{field.name}_set')
+        return getattr(instance, f'{field.name}')
 
 
 def get_field_type(field):
@@ -721,7 +721,7 @@ class InstanceListAPI(APIView):
         # TODO: Elasticsearch implementation needs to be updated to return all instances where the user is in the permitted users.
 
         instances = model_class.search.filter(
-            must={'tracked': True, 'user': request.user.id},
+            must={'tracked': True},
             must_not={'id': must_not},
             page=request.GET.get('page'),
             size=request.GET.get('size'),

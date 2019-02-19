@@ -193,10 +193,10 @@ def parse_data(data, user):
         )
 
         statistics = []
-        statistics.append({'icon': 'home', 'name': 'Leyes_Propuestas', 'value': str(row['Leyes_Propuestas'])})
-        statistics.append({'icon': 'plane', 'name': 'Asistencia', 'value': str(row['Asistencia'])})
-        statistics.append({'icon': 'wrench', 'name': 'Circuito', 'value': str(row['Circuito'])})
-        statistics.append({'icon': 'spinner', 'name': 'Periodos', 'value': str(row['Periodos'])})
+        statistics.append({'icon': 'gavel', 'name': 'Leyes_Propuestas', 'value': str(row['Leyes_Propuestas'])})
+        statistics.append({'icon': 'percent', 'name': 'Asistencia', 'value': str(row['Asistencia'])})
+        statistics.append({'icon': 'map-marked-alt', 'name': 'Circuito', 'value': str(row['Circuito'])})
+        statistics.append({'icon': 'calendar-alt', 'n': 'Periodos', 'value': str(row['Periodos'])})
 
         individual.statistics = statistics
         try:
@@ -243,7 +243,7 @@ def migrate():
             password='Migrate123',
         )
     except:
-        user = User.objects.get(id=1)
+        user = User.objects.get(email='migration@bot.com')
 
     data = pd.read_excel('data/final_diputados.xlsx', sheet_name=0)
 

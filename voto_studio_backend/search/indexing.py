@@ -137,5 +137,5 @@ def clear_indices(using=settings.STUDIO_DB, confirm=False):
 
         for model_label in MODELS_TO_INDEX:
             # If the index exists delete it.
-            if check_index_exists(model_label, using=alias):
+            if check_index_exists(model_label, using=alias) and model_label != settings.AUTH_USER_MODEL:
                 client.indices.delete(build_index_name(model_label, using=alias))

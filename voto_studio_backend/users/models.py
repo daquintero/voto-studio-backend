@@ -35,6 +35,7 @@ class User(AbstractBaseUser, PermissionsMixin, InfoMixin, IndexingMixin):
     email = models.EmailField(_('email address'), max_length=255, unique=True)
     name = models.CharField(_('name'), max_length=255)
     is_staff = models.BooleanField(_('staff status'), default=False)
+    is_researcher = models.BooleanField(_('researcher status'), default=False)
     is_active = models.BooleanField(_('active'), default=True)
     date_joined = models.DateTimeField(_('data joined'), default=timezone.now)
     profile_picture = models.OneToOneField(
