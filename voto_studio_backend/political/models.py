@@ -30,6 +30,17 @@ INDIVIDUAL_TYPES = (
     ('1', _('Politician')),
     ('2', _('Business person')),
     ('3', _('Civilian')),
+    ('4', _('Alcalde')),
+    ('5', _('Ministro')),
+    ('6', _('Presidente')),
+    ('7', _('Vicepresidente')),
+    ('8', _('Concejal')),
+    ('9', _('Representante')),
+    ('10', _('Gobierno')),
+    ('11', _('Magistrado de la CSJ')),
+    ('12', _('Magistrado Tribunal de Cuentas')),
+    ('13', _('Diputado')),
+    ('14', _('Vicealcalde')),
 )
 
 
@@ -148,6 +159,7 @@ class Organization(TrackedWorkshopModel):
     related_name = 'organizations'
 
     name = models.CharField(_('Name'), max_length=2048, default=str, unique=True)
+    alias = models.CharField(_('Alias'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     email = models.CharField(_('Email Address'), max_length=64, default=str)

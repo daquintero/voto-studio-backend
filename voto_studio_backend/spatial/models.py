@@ -72,7 +72,7 @@ class Geometry(models.Model):
 
 
 class DataSetManager(models.Manager):
-    def create_from_json(self, name=None, file=None):
+    def create_from_json(self, name=None, file=None, **kwargs):
         if file is None or not file.name.endswith(('.geojson', '.json')):
             raise ValueError('Provide a json or geojson file.')
 
@@ -80,7 +80,8 @@ class DataSetManager(models.Manager):
         data_set = self.model(
             name=name,
             type='FeatureCollection',
-            geometry_collection=GEOSGeometryCollection(tuple(g.geometry for g in geometries))
+            geometry_collection=GEOSGeometryCollection(tuple(g.geometry for g in geometries)),
+            **kwargs,
         )
         data_set.save(using=settings.SPATIAL_DB)
         data_set.geometries.set(geometries)
