@@ -20,49 +20,65 @@ def name_regex(name):
     return full_name, alias
 
 
-def laws_regex(law_string):
+def laws_regex(laws_string):
     try:
-        separate_laws = law_string.split('\n')
-        law_number_regex = re.compile("^Ley (\d+)( /(\d+))|(  /(\d+))")
+        # Extract info regex
+        separate_laws = laws_string.split('\n')
+        law_number_regex = re.compile("(^Ley (\d+))|(^Proyecto (\d+))( /(\d+))?(  /(\d+))?")
         laws_compendium = []
         for raw_law in separate_laws:
             try:
-                full_meta = law_number_regex.match(raw_law).group(0)
-                law_number = law_number_regex.match(raw_law).group(1)
+                full_meta = law_number_regex.match(raw_law).group(1)
+                print(law_number_regex.match(raw_law).group(3))
+                law_number = law_number_regex.match(raw_law).group(2)
                 law_description = re.sub(full_meta, "", raw_law)
                 law = {'law_number' : law_number, 'law_description': law_description}
                 laws_compendium.append(law)
+                print(law)
             except AttributeError:
-                # print("Oh ----------- " + raw_law)
+                print("Law did not match" + raw_law)
                 pass
             except IndexError:
-                # print("Oh ----------- " + raw_law)
+                print("Laws did not match" + raw_law)
+                pass
+            except TypeError:
+                print("Laws did not match" + raw_law)
                 pass
         return laws_compendium
     except AttributeError:
-        # print(laws_array)
+        print("Did not split ")
+        print(laws_string)
         pass
 
 
-def projects_regex(law_string):
+def projects_regex(laws):
     try:
-        law_number_regex = re.compile("^Proyecto de ley (\d+)|( /(\d+))")
+        law_number_regex = re.compile("^Proyecto de ley (\d+)( /(\d+))?")
         laws_compendium = []
-        for raw_law in law_string:
+        for raw_law in laws:
             try:
                 full_meta = law_number_regex.match(raw_law).group(0)
                 law_number = law_number_regex.match(raw_law).group(1)
                 raw_law_description = re.sub(full_meta, "", raw_law)
                 law_description = "%s%s" % (raw_law_description[1].upper(), raw_law_description[2:])
-                law = {'law_number' : law_number, 'law_description': law_description}
+                law = {'law_number': law_number, 'law_description': law_description}
                 laws_compendium.append(law)
             except AttributeError:
-                print("Oh ----------- " + raw_law)
+                print("Law did not match ATT")
+                print(laws)
+                pass
             except IndexError:
-                print("Oh ----------- " + raw_law)
+                print("Laws did not match IND ")
+                print(laws)
+                pass
+            except TypeError:
+                print("Laws did not match TYPE")
+                print(laws)
+                pass
         return laws_compendium
     except AttributeError:
-        print("Oh Oh----------- " + law_string)
+        print("Oh Oh----------- ")
+        print(laws)
 
 
 def social_media_regex(full_url, domain):
