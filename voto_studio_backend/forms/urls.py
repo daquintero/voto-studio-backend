@@ -24,11 +24,6 @@ urlpatterns = [
         name='location_picker',
     ),
     path(
-        f'{api_v1}/get_related_fields/',
-        views.RelatedFieldsAPI.as_view(),
-        name='get_related_fields',
-    ),
-    path(
         f'{api_v1}/update_basic_fields/',
         views.UpdateBasicFieldsAPI.as_view(),
         name='update_basic_fields',

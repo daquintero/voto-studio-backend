@@ -1,10 +1,9 @@
 import random
 import string
 
-from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from voto_studio_backend.changes.models import TrackedWorkshopModel
+from voto_studio_backend.changes.models import TrackedWorkshopModelManager, TrackedWorkshopModel
 
 
 TEST_CHOICES = (
@@ -20,9 +19,9 @@ def create_random_string(k=15, seed='test_seed'):
     return ''.join(random.choices(string.ascii_letters, k=k))
 
 
-class BasicModelManager(models.Manager):
+class BasicModelManager(TrackedWorkshopModelManager):
     def create_with_defaults(self, user):
-        basic_model = self.model(
+        basic_model = super().create(
             char_field=create_random_string(),
             text_field=create_random_string(k=128),
             integer_field=random.randint(0, 100),
@@ -32,12 +31,13 @@ class BasicModelManager(models.Manager):
             choice_field=random.choice(TEST_CHOICES)[0],
             user=user,
         )
-        basic_model.save(using=settings.STUDIO_DB)
 
         return basic_model
 
 
 class BasicModel(TrackedWorkshopModel):
+    related_name = 'basic_models'
+
     # Basic Fields
     char_field = models.CharField(max_length=128, blank=True, default=str)
     text_field = models.TextField(blank=True, default=str)
@@ -48,10 +48,10 @@ class BasicModel(TrackedWorkshopModel):
     choice_field = models.CharField(max_length=128, choices=TEST_CHOICES, blank=True, null=True)
     date_time_field = models.DateTimeField(blank=True, default=timezone.now)
     one_to_one_field = models.OneToOneField('self', null=True, on_delete=models.SET_NULL)
-    foreign_key_field = models.ForeignKey('self', null=True, on_delete=models.SET_NULL, related_name='basic_models')
+    foreign_key_field = models.ForeignKey('self', null=True, on_delete=models.SET_NULL, related_name=related_name)
 
     # Related Fields
-    many_to_many_field = models.ManyToManyField('self')
+    many_to_many_field = models.ManyToManyField('self', related_name=related_name)
 
     objects = BasicModelManager()
 

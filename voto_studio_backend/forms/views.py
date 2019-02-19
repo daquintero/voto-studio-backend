@@ -230,17 +230,6 @@ def get_options(instance, field, using=settings.STUDIO_DB):
     return {}
 
 
-def get_or_create_instance(app_label, model_name, instance_id):
-    """
-    Get or create an instance of the model class defined by the ``app_label``
-    and ``model_name`` parameters. Also return the model class used.
-    """
-    model_class = get_model(app_label=app_label, model_name=model_name)
-    instance_id = instance_id if not (instance_id == 'new') else None
-
-    return model_class, model_class.objects.get_or_create(id=instance_id)
-
-
 def is_read_only(field):
     """
     Determine whether the field is read-only using the defined
@@ -468,57 +457,6 @@ class UpdateBasicFieldsAPI(APIView):
             'created': new,
             'updated': True,
             **get_meta(model_class),
-        }
-
-        return Response(response, status=status.HTTP_200_OK)
-
-
-class RelatedFieldsAPI(APIView):
-    """
-    Class providing API endpoints for actions relevant to related fields.
-    """
-    @staticmethod
-    def get(request):
-        """
-        Given a parent and related model return the related instances.
-        """
-        if not request.user.is_authenticated:
-            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
-
-        using = settings.STUDIO_DB if not request.GET.get('using') else request.GET.get('using')
-
-        parent_app_label = request.GET.get('pal')
-        parent_model_name = request.GET.get('pmn')
-        parent_model_class = get_model(app_label=parent_app_label, model_name=parent_model_name)
-        parent_instance_id = request.GET.get('pid')
-        parent_instance = get_object_or_403(parent_model_class, (request.user, 'read'), id=parent_instance_id)
-
-        related_app_label = request.GET.get('ral')
-        related_model_name = request.GET.get('rmn')
-        related_model_class = get_model(app_label=related_app_label, model_name=related_model_name)
-        related_field_name = request.GET.get('rfn')
-        related_field = parent_model_class._meta.get_field(related_field_name)
-
-        page_size = request.GET.get('page_size')
-
-        if parent_instance is not None:
-            blacklist_ids = [o.id for o in get_field_value(parent_instance, field=related_field).all()]
-            blacklist_ids.insert(0, parent_instance_id)
-        else:
-            blacklist_ids = []
-
-        instances = related_model_class.search.filter(
-            must={'tracked': True},
-            must_not={'id': blacklist_ids},
-            using=using,
-            size=page_size,
-        )
-
-        response = {
-            'related_field_instances': instances,
-            'table_heads': related_model_class.get_table_heads(related_model_class) if instances else [],
-            'verbose_name': related_model_class._meta.verbose_name,
-            'field_name': related_field_name,
         }
 
         return Response(response, status=status.HTTP_200_OK)

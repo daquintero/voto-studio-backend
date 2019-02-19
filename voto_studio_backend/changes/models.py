@@ -278,8 +278,6 @@ class TrackedModel(PermissionsBaseModel):
     date_created = models.DateTimeField(_('Date of Creation'), default=timezone.now)
     tracked = models.BooleanField(_('Tracked'), default=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
-    location_id = models.CharField(_('Location Identifier'), max_length=32, null=True, blank=True)
-    location_id_name = models.CharField(_('Location Identifier Name'), max_length=32, null=True, blank=True)
 
     objects = models.Manager()
     search = IndexingManager()
@@ -362,6 +360,9 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
     statistics = JSONField(_('Statistics'), blank=True, null=True, default=list)
+
+    location_id_name = models.CharField(_('Location Identifier Name'), max_length=32, null=True, blank=True)
+    location_id = models.CharField(_('Location Identifier'), max_length=32, null=True, blank=True)
 
     rels_dict = JSONField(_('Relationships Dictionary'), blank=True, default=dict)
 

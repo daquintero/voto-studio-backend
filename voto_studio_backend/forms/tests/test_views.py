@@ -100,34 +100,6 @@ class ModuleLevelFunctionTests(ESTestCase):
 
         self.assertEqual(len(options['options']), len(TEST_CHOICES) + 1)
 
-    def test_get_or_create_instance(self):
-        app_label, model_name = self.instance._meta.label.split('.')
-
-        # We will use this method to get the instance
-        # referenced by ``self.instance``.
-        instance_id = self.instance.id
-        model_class, (instance, new) = views.get_or_create_instance(app_label, model_name, instance_id, self.request)
-
-        # Make sure that no new instance was created, the
-        # instance retrieved is an instance of the correct
-        # model_class and then the instance retrieved is
-        # the correct instance object.
-        self.assertFalse(new)
-        self.assertIsInstance(self.instance, model_class)
-        self.assertEqual(self.instance, instance)
-
-        # We also want to test the "create" part of the
-        # method. If we provide an ID that matches no
-        # instance of the given type then it will create
-        # a new instance. Therefore, by passing ``None``
-        # as the ID a new instance will always be made.
-        model_class, (instance, new) = views.get_or_create_instance(app_label, model_name, None, self.request)
-
-        # Make sure that a new instance was made and confirm
-        # it is an instance of the correct model class.
-        self.assertTrue(new)
-        self.assertIsInstance(instance, model_class)
-
     def test_is_read_only(self):
         field = BasicModel._meta.get_field('date_created')
 
@@ -165,7 +137,7 @@ class BuildFormAPITests(ESTestCase):
             'mn': 'basicmodel',
             'id': 'new',
         })
-        form_data = response.data['form']
+        form_data = response.data
 
         # Make sure the request was successful with a 200
         # HTTP code. Make sure we have created a new instance
@@ -188,7 +160,7 @@ class BuildFormAPITests(ESTestCase):
             'mn': 'basicmodel',
             'id': self.instance.id,
         })
-        form_data = response.data['form']
+        form_data = response.data
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(form_data['new'])
@@ -196,60 +168,6 @@ class BuildFormAPITests(ESTestCase):
         self.assertEqual(len(form_data['basic_fields']), BasicModel.basic_field_count)
         self.assertEqual(len(form_data['related_fields']), BasicModel.related_field_count)
         self.assertNotEqual(form_data['default_values'], {})
-
-
-class RelatedFieldsAPITests(ESTestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email='foo@RelatedFieldsAPITests.com',
-            name='Baz',
-            password='Foobarbaz123'
-        )
-        self.client.defaults['HTTP_AUTHORIZATION'] = auth_header(self.user)
-        self.instance = create_instance(user=self.user)
-        self.related_instances = [create_instance(user=self.user) for _ in range(10)]
-        time.sleep(2)
-
-    def test_get(self):
-        response = self.client.get(reverse('forms:get_related_fields'), {
-            # Parent model class info
-            'pal': 'test_app',
-            'pmn': 'basicmodel',
-            'pid': 'new',
-            # Related model class info
-            'ral': 'test_app',
-            'rmn': 'basicmodel',
-            'rfn': 'many_to_many_field',
-            # Meta
-            'page_size': 100,
-        })
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['verbose_name'], BasicModel._meta.verbose_name)
-        self.assertEqual(len(response.data['related_field_instances']), len(self.related_instances) + 1)
-
-        random.seed('RelatedFieldsAPITests::test_get')
-        num_related_instances = random.randint(1, len(self.related_instances))
-        random_related_instances = random.sample(self.related_instances, k=num_related_instances)
-        self.instance.many_to_many_field.set(random_related_instances)
-
-        response = self.client.get(reverse('forms:get_related_fields'), {
-            # Parent model class info
-            'pal': 'test_app',
-            'pmn': 'basicmodel',
-            'pid': self.instance.id,
-            # Related model class info
-            'ral': 'test_app',
-            'rmn': 'basicmodel',
-            'rfn': 'many_to_many_field',
-            # Meta
-            'page_size': 100,
-        })
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['verbose_name'], BasicModel._meta.verbose_name)
-        self.assertEqual(len(response.data['related_field_instances']),
-                         len(self.related_instances) - num_related_instances)
 
 
 class InstanceDetailAPITests(TestCase):
@@ -305,7 +223,7 @@ class UpdateBasicFieldsAPITests(TransactionTestCase):
         updated_instance = get_object_or_404(BasicModel, id=self.instance.id)
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.data['result']['updated'])
+        self.assertTrue(response.data['updated'])
         self.assertEqual(updated_instance.char_field, new_data['char_field'])
         self.assertEqual(updated_instance.text_field, new_data['text_field'])
         self.assertEqual(updated_instance.boolean_field, new_data['boolean_field'])
@@ -336,42 +254,44 @@ class UpdateBasicFieldsAPITests(TransactionTestCase):
         self.assertEqual(response.status_code, 400)
 
 
-class UpdateRelatedFieldAPITests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email='foo@UpdateRelatedFieldAPITest.com',
-            name='Baz',
-            password='Foobarbaz123'
-        )
-        self.client.defaults['HTTP_AUTHORIZATION'] = auth_header(self.user)
-        self.instance = create_instance(user=self.user)
-
-    def test_post(self):
-        random.seed('UpdateRelatedFieldAPITests::test_post')
-        related_instance = create_instance(user=self.user)
-        response = self.client.post(reverse('forms:update_related_field'), {
-            'model_label': 'test_app.BasicModel',
-            'id': self.instance.id,
-            'related_model_label': 'test_app.BasicModel',
-            'related_ids': [related_instance.id],
-            'update_type': 'add',
-            'field_name': 'many_to_many_field',
-        }, content_type='application/json')
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(self.instance.many_to_many_field.all()), [related_instance])
-
-        response = self.client.post(reverse('forms:update_related_field'), {
-            'model_label': 'test_app.BasicModel',
-            'id': self.instance.id,
-            'related_model_label': 'test_app.BasicModel',
-            'related_ids': [related_instance.id],
-            'update_type': 'remove',
-            'field_name': 'many_to_many_field',
-        }, content_type='application/json')
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(self.instance.many_to_many_field.all()), [])
+# class UpdateRelatedFieldAPITests(TestCase):
+#     def setUp(self):
+#         self.user = User.objects.create_user(
+#             email='foo@UpdateRelatedFieldAPITest.com',
+#             name='Baz',
+#             password='Foobarbaz123'
+#         )
+#         self.client.defaults['HTTP_AUTHORIZATION'] = auth_header(self.user)
+#         self.instance = create_instance(user=self.user)
+#
+#     def test_post(self):
+#         random.seed('UpdateRelatedFieldAPITests::test_post')
+#         related_instance = create_instance(user=self.user)
+#         response = self.client.post(reverse('forms:update_related_field'), {
+#             'model_label': 'test_app.BasicModel',
+#             'id': self.instance.id,
+#             'related_model_label': 'test_app.BasicModel',
+#             'related_ids': [related_instance.id],
+#             'update_type': 'add',
+#             'field_name': 'many_to_many_field',
+#             'rel_level': 'rel',
+#         }, content_type='application/json')
+#
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(list(self.instance.many_to_many_field.all()), [related_instance])
+#
+#         response = self.client.post(reverse('forms:update_related_field'), {
+#             'model_label': 'test_app.BasicModel',
+#             'id': self.instance.id,
+#             'related_model_label': 'test_app.BasicModel',
+#             'related_ids': [related_instance.id],
+#             'update_type': 'remove',
+#             'field_name': 'many_to_many_field',
+#             'rel_level': 'ref',
+#         }, content_type='application/json')
+#
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(list(self.instance.many_to_many_field.all()), [])
 
 
 class DeleteInstanceAPITests(TestCase):
