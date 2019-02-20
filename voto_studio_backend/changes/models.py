@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from shared.utils import hidden_fields
-from voto_studio_backend.forms.models import InfoMixin
+from voto_studio_backend.forms.models import InfoMixin, JSONModel, JSONAutoField, JSONCharField
 from voto_studio_backend.search.models import IndexingManager, IndexingMixin
 from voto_studio_backend.permissions.models import PermissionsBaseModel
 
@@ -356,10 +356,17 @@ class TrackedWorkshopModelManager(models.Manager):
         return instance, new
 
 
+class Statistics(JSONModel):
+    id = JSONAutoField(unique=True)
+    icon = JSONCharField(max_length=128)
+    name = JSONCharField(max_length=128)
+    value = JSONCharField(max_length=128)
+
+
 class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     source = models.URLField(_('Source'), max_length=2048, blank=True, null=True)
     date = models.DateTimeField(blank=True, null=True)
-    statistics = JSONField(_('Statistics'), blank=True, null=True, default=list)
+    statistics = JSONField(_('Statistics'), blank=True, null=True, default=Statistics())
 
     location_id_name = models.CharField(_('Location Identifier Name'), max_length=32, null=True, blank=True)
     location_id = models.CharField(_('Location Identifier'), max_length=32, null=True, blank=True)

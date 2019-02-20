@@ -1,9 +1,10 @@
 from django.conf import settings
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from shared.utils import hidden_fields
 from voto_studio_backend.changes.models import TrackedWorkshopModel
-
+from voto_studio_backend.forms.models import JSONModel, JSONAutoField, JSONCharField, JSONTextField
 
 CATEGORIES = (
     ('1', _('Economy')),
@@ -68,6 +69,20 @@ POLITICAL_POSITIONS = (
 )
 
 
+# def get_experience_default():
+#     return {
+#       'schema': {
+#         'fields': [
+#             {'name': 'id', 'type': 'number', 'readOnly': True},
+#             {'name': 'title', 'type': 'text', 'readOnly': False},
+#             {'name': 'type', 'type': 'text', 'readOnly': False},
+#             {'name': 'description', 'type': 'textarea', 'readOnly': False},
+#         ],
+#       },
+#       'subInstances': [],
+#     },
+
+
 class Law(TrackedWorkshopModel):
     """
     Specifically a class created for individuals with previous political history.
@@ -103,6 +118,13 @@ class Law(TrackedWorkshopModel):
     )
 
 
+class Experience(JSONModel):
+    id = JSONAutoField(unique=True)
+    type = JSONCharField(max_length=32)
+    title = JSONCharField(max_length=128)
+    description = JSONTextField()
+
+
 class Individual(TrackedWorkshopModel):
     name = models.CharField(_('Name'), max_length=128, default=str)
     alias = models.CharField(_('Alias'), max_length=64, default=str)
@@ -116,6 +138,7 @@ class Individual(TrackedWorkshopModel):
     type = models.CharField(_('Type'), choices=INDIVIDUAL_TYPES, max_length=128, blank=True, null=True)
     corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
     non_corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
+    experience = JSONField(default=Experience(), blank=True, null=True)
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
     individuals = models.ManyToManyField('self', blank=True)

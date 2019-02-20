@@ -386,6 +386,11 @@ class BuildFormAPI(APIView):
                                    for _id in instance.get_order(field.name)]
                 media_fields_dict[field.name] = MEDIA_SERIALIZER_MAPPINGS[field.name](media_instances, many=True).data
 
+        else:
+            for field in basic_fields:
+                if field.get_internal_type() == 'JSONField':
+                    default_values[field.name] = field.get_default()
+
         response = {
             'new': new,
             'parent_model': {

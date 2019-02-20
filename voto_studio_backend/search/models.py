@@ -1,3 +1,5 @@
+import json
+
 from django.conf import settings
 from django.db import models
 from elasticsearch.exceptions import NotFoundError
@@ -59,7 +61,13 @@ class IndexingMixin:
         )
 
         fields = [field for field in get_fields(model_class=self) if field.name not in excluded_fields]
-        ret = {f.name: parse_value(f, getattr(self, f.name)) for f in fields}
+        ret = {}
+        for field in fields:
+            if field.get_internal_type() == 'JSONField':
+                print(getattr(self, field.name))
+                ret.update({field.name: getattr(self, field.name)})
+            else:
+                ret.update({field.name: parse_value(field, getattr(self, field.name))})
 
         if hasattr(self, 'search_method_fields'):
             for method_field_name in self.search_method_fields:

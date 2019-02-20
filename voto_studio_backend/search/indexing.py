@@ -3,7 +3,7 @@ import re
 from django.apps import apps
 from django.conf import settings
 from elasticsearch.helpers import bulk
-from elasticsearch_dsl import Document, Text, Date, Boolean, Integer, Long, Object
+from elasticsearch_dsl import Document, Text, Date, Boolean, Integer, Long, Object, Nested
 from elasticsearch_dsl.connections import create_connection
 from shared.utils import get_model
 from .utils import get_models_to_index, get_fields
@@ -36,7 +36,7 @@ FIELD_MAP = {
     'DateTimeField': Date,
     'BooleanField': Boolean,
     'FileField': None,
-    'JSONField': Object,
+    'JSONField': Nested,
 }
 
 

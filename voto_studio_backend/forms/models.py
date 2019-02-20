@@ -1,3 +1,6 @@
+from django.utils.deconstruct import deconstructible
+
+
 def _is_numeric(model_class, table_head):
     field_type = model_class._meta.get_field(table_head).get_internal_type()
 
@@ -103,3 +106,62 @@ class InfoMixin:
                 })
 
         return detail_values
+
+
+class JSONBaseField:
+    def __init__(self, read_only=False):
+        self.read_only = read_only
+
+
+class JSONAutoField(JSONBaseField):
+    type = 'number'
+    auto = True
+
+    def __init__(self, *, read_only=True, unique=True):
+        self.unique = unique
+        super().__init__(read_only=read_only)
+
+
+class JSONCharField(JSONBaseField):
+    type = 'text'
+
+    def __init__(self, max_length, *, read_only=False):
+        self.max_length = max_length
+        super().__init__(read_only=read_only)
+
+
+class JSONTextField(JSONBaseField):
+    type = 'textarea'
+
+
+@deconstructible
+class JSONModel:
+    def __call__(self, *args, **kwargs):
+        return self._json
+
+    def _get_attrs(self):
+        attrs = []
+        for attr, val in dict(vars(self.__class__)).items():
+            if not attr.startswith('_'):
+                attrs.append((attr, val))
+
+        return attrs
+
+    @property
+    def _json(self):
+        json = {
+            'schema': {
+                'fields': [],
+                'validation': [],
+            },
+            'sub_instances': [],
+        }
+        for attr in self._get_attrs():
+            field_name, field_class = attr
+            json['schema']['fields'].append({
+                'name': field_name,
+                'type': field_class.type,
+                'read_only': field_class.read_only,
+            })
+
+        return json
