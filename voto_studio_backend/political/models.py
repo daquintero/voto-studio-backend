@@ -69,20 +69,6 @@ POLITICAL_POSITIONS = (
 )
 
 
-# def get_experience_default():
-#     return {
-#       'schema': {
-#         'fields': [
-#             {'name': 'id', 'type': 'number', 'readOnly': True},
-#             {'name': 'title', 'type': 'text', 'readOnly': False},
-#             {'name': 'type', 'type': 'text', 'readOnly': False},
-#             {'name': 'description', 'type': 'textarea', 'readOnly': False},
-#         ],
-#       },
-#       'subInstances': [],
-#     },
-
-
 class Law(TrackedWorkshopModel):
     """
     Specifically a class created for individuals with previous political history.
@@ -122,6 +108,7 @@ class Experience(JSONModel):
     id = JSONAutoField(unique=True)
     type = JSONCharField(max_length=32)
     title = JSONCharField(max_length=128)
+    organization = JSONCharField(max_length=128)
     description = JSONTextField()
 
 

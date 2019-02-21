@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 from django.test import RequestFactory
-from voto_studio_backend.changes.models import Change
+from voto_studio_backend.changes.models import Change, Statistics
 from voto_studio_backend.political.models import Individual, Law, Organization, Controversy
 from voto_studio_backend.users.models import User
 
@@ -29,12 +29,10 @@ def laws_regex(laws_string):
         for raw_law in separate_laws:
             try:
                 full_meta = law_number_regex.match(raw_law).group(1)
-                print(law_number_regex.match(raw_law).group(3))
                 law_number = law_number_regex.match(raw_law).group(2)
                 law_description = re.sub(full_meta, "", raw_law)
                 law = {'law_number' : law_number, 'law_description': law_description}
                 laws_compendium.append(law)
-                print(law)
             except AttributeError:
                 print("Law did not match" + raw_law)
                 pass
@@ -159,6 +157,9 @@ def create_orgs(data, user):
             pass
 
 
+default_statistics = Statistics()()
+
+
 def parse_data(data, user):
     print('Migrating rows...')
     individuals = []
@@ -192,11 +193,44 @@ def parse_data(data, user):
             location_id=row['Circuito'],
         )
 
-        statistics = []
-        statistics.append({'icon': 'gavel', 'name': 'Leyes_Propuestas', 'value': str(row['Leyes_Propuestas'])})
-        statistics.append({'icon': 'percent', 'name': 'Asistencia', 'value': str(row['Asistencia'])})
-        statistics.append({'icon': 'map-marked-alt', 'name': 'Circuito', 'value': str(row['Circuito'])})
-        statistics.append({'icon': 'calendar-alt', 'n': 'Periodos', 'value': str(row['Periodos'])})
+        statistics = Statistics()()
+
+        statistics['sub_instances'].append({
+            'id': '1',
+            'fields': [
+                {'name': 'id', 'value': '1'},
+                {'name': 'name', 'value': 'Leyes_Propuestas'},
+                {'name': 'value', 'value': str(row['Leyes_Propuestas'])},
+                {'name': 'icon', 'value': 'gavel'},
+            ]
+        })
+        statistics['sub_instances'].append({
+            'id': '2',
+            'fields': [
+                {'name': 'id', 'value': '2'},
+                {'name': 'name', 'value': 'Asistencia'},
+                {'name': 'value', 'value': str(row['Asistencia'])},
+                {'name': 'icon', 'value': 'percent'},
+            ]
+        })
+        statistics['sub_instances'].append({
+            'id': '3',
+            'fields': [
+                {'name': 'id', 'value': '3'},
+                {'name': 'name', 'value': 'Circuito'},
+                {'name': 'value', 'value': str(row['Circuito'])},
+                {'name': 'icon', 'value': 'map-marked-alt'},
+            ]
+        })
+        statistics['sub_instances'].append({
+            'id': '4',
+            'fields': [
+                {'name': 'id', 'value': '4'},
+                {'name': 'name', 'value': 'Periodos'},
+                {'name': 'value', 'value': str(row['Periodos'])},
+                {'name': 'icon', 'value': 'calendar-alt'},
+            ]
+        })
 
         individual.statistics = statistics
         try:

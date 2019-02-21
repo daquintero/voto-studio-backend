@@ -64,7 +64,6 @@ class IndexingMixin:
         ret = {}
         for field in fields:
             if field.get_internal_type() == 'JSONField':
-                print(getattr(self, field.name))
                 ret.update({field.name: getattr(self, field.name)})
             else:
                 ret.update({field.name: parse_value(field, getattr(self, field.name))})
