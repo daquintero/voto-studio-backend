@@ -113,6 +113,8 @@ class Experience(JSONModel):
 
 
 class Individual(TrackedWorkshopModel):
+    related_name = 'individuals'
+
     name = models.CharField(_('Name'), max_length=128, default=str)
     alias = models.CharField(_('Alias'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
@@ -127,9 +129,9 @@ class Individual(TrackedWorkshopModel):
     non_corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
     experience = JSONField(default=Experience(), blank=True, null=True)
 
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
-    individuals = models.ManyToManyField('self', blank=True)
-    laws = models.ManyToManyField('political.Law', blank=True)
+    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
+    individuals = models.ManyToManyField('self', blank=True, related_name=related_name)
+    laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
 
     table_descriptors = (
         'name',

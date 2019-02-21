@@ -55,12 +55,10 @@ class PermissionsBaseModel(models.Model):
             raise PermissionError(f"User {user} is not in 'permitted_users'.")
 
     def is_permitted(self, user, operation):
-        print(user.is_researcher)
         if user.is_researcher:
             if operation == COMMIT_OPERATION:
                 return True
             migration_bot = get_object_or_404(User, email='migration@bot.com')
-            print(self.user, migration_bot)
             if self.user == migration_bot:
                 return True
         if user == self.user and not operation == COMMIT_OPERATION:

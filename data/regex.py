@@ -131,6 +131,9 @@ def create_controversies(data, user):
             type=17,
             user=user,
         )
+
+        # A dict that defines all the fks can be added
+        # to ES only after the migrations have been done.
         controversy.individual = individual
         controversy.save()
 
@@ -243,6 +246,7 @@ def parse_data(data, user):
 
         org = Organization.objects.get(name=row['Political_Party_Name'])
         org.individuals.add(base_instance)
+        org.add_rel(Organization._meta.get_field('individuals'), base_instance)
         base_org = Change.objects.stage_updated(org, request)
 
         laws = []
@@ -265,6 +269,8 @@ def parse_data(data, user):
         individuals.append(base_instance)
 
         base_instance.laws.set(laws)
+        for law in laws:
+            base_instance.add_rel(Individual._meta.get_field('laws'), law)
         base_instance = Change.objects.stage_updated(base_instance, request)
         base_law_instances = Change.objects.bulk_stage_updated(laws, request)
 
