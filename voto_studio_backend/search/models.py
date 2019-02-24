@@ -85,6 +85,7 @@ class IndexingMixin:
             table_values=self.get_table_values(),
             **self.get_kwargs(),
             refresh=True,
+            views=0,
         )
         obj.save(index=build_index_name(model_label, using=using))
 

@@ -318,8 +318,11 @@ def update_rels_dict(model_class):
         if not index % int(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
         rels_dict = instance.rels_dict
-        for key, ids in rels_dict.items():
-            rels_dict[key].update({'model_label': FIELD_MODEL_MAP[key]})
+        for key in list(rels_dict.keys()):
+            if not FIELD_MODEL_MAP[key].startswith('media'):
+                rels_dict[key].update({'model_label': FIELD_MODEL_MAP[key]})
+            else:
+                rels_dict.pop(key)
 
         instance.rels_dict = rels_dict
         instance.save(using=settings.STUDIO_DB)

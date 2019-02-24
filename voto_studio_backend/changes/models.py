@@ -355,6 +355,8 @@ class TrackedWorkshopModelManager(models.Manager):
                                if field.many_to_many]
         many_to_many_fields = [field for field in many_to_many_fields
                                if field.name not in self.model.hidden_fields]
+        many_to_many_fields = [field for field in many_to_many_fields
+                               if not field.related_model._meta.model_label.startswith('media')]
 
         return many_to_many_fields
 

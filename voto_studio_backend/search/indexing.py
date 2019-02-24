@@ -117,6 +117,8 @@ def bulk_indexing(using=settings.STUDIO_DB):
                     instances = model_class.objects.using(alias).filter(tracked=True)
                 except FieldError:
                     instances = model_class.objects.using(alias).all()
+                print(instances)
+                print(using)
                 bulk(
                     client=client,
                     actions=(instance.create_document() for instance in instances.iterator())

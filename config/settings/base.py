@@ -261,9 +261,6 @@ BASE_HIDDEN_FIELDS = (
 
 MODELS_TO_INDEX = (
     'users.User',
-    'media.Image',
-    'media.Video',
-    'media.Resource',
 )
 MODELS_TO_INDEX += WORKSHOP_MODELS
 
