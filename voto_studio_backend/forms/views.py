@@ -348,7 +348,7 @@ class BuildFormAPI(APIView):
                 'label': field.name.replace('_', ' ').title(),
                 'value': field.related_model._meta.label
             },
-            'rels_dict': instance.rels_dict[field.name] if instance else get_rels_dict_default(single_dict_only=True),
+            'rels_dict': instance.rels_dict[field.name] if instance else get_rels_dict_default(field=field),
             **get_meta(field.related_model),
         } for field in related_fields]
 
@@ -644,7 +644,7 @@ class InstanceDetailAPI(APIView):
         return Response(response, status=status.HTTP_200_OK,)
 
 
-class PublishInstanceAPI(APIView):
+class PublishInstancesAPI(APIView):
     """
     Class providing API endpoints used to publish changes.
    """
@@ -656,14 +656,13 @@ class PublishInstanceAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        app_label = request.GET.get('al')
-        model_name = request.GET.get('mn')
-        instance_id = request.GET.get('id')
+        model_label = request.data['model_label']
+        instance_ids = request.data['instance_ids']
 
-        model_class = get_model(app_label=app_label, model_name=model_name)
-        instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_id)
+        model_class = get_model(model_label=model_label)
+        instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_ids[0])
 
-        committed_changes = Change.objects.commit_for_instance(instance, request)
+        committed_changes = Change.objects.commit_for_instance(instance)
 
         response = {
             'changes_committed': [c.id for c in committed_changes],

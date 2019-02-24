@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 
+from django.conf import settings
 from django.test import RequestFactory
 from voto_studio_backend.changes.models import Change, Statistics
 from voto_studio_backend.political.models import Individual, Law, Organization, Controversy
@@ -293,3 +294,34 @@ def migrate():
     data = pd.read_excel('data/final_diputados.xlsx', sheet_name=1)
 
     create_controversies(data, user)
+
+
+FIELD_MODEL_MAP = {
+    'financial_items': 'political.FinancialItem',
+    'individuals': 'political.Individual',
+    'organizations': 'political.Organization',
+    'laws': 'political.Law',
+    'electoral_periods': 'political.ElectoralPeriod',
+    'informative_snippets': 'corruption.InformativeSnippet',
+    'images': 'media.Image',
+    'videos': 'media.Video',
+    'resources': 'media.Resource',
+}
+
+
+def update_rels_dict(model_class):
+    user = User.objects.get(email='migration@bot.com')
+    request = RequestFactory()
+    request.user = user
+    instances = model_class.objects.filter(tracked=True)
+    for index, instance in enumerate(instances):
+        if not index % int(instances.count() / 10):
+            print(f'{round(index / instances.count() * 100)}%')
+        rels_dict = instance.rels_dict
+        for key, ids in rels_dict.items():
+            rels_dict[key].update({'model_label': FIELD_MODEL_MAP[key]})
+
+        instance.rels_dict = rels_dict
+        instance.save(using=settings.STUDIO_DB)
+        Change.objects.stage_updated(instance, request)
+    print('100%')

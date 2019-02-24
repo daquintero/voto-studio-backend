@@ -30,7 +30,7 @@ class GeometryCollection(models.Model):
 
 
 class GeometryManager(models.Manager):
-    def create_from_json(self, name=None, file=None):
+    def create_from_json(self, name=None, file=None, location_id_name=None, **kwargs):
         if file is None or not file.name.endswith(('.geojson', '.json')):
             raise ValueError('Provide a json or geojson file.')
 
@@ -39,10 +39,15 @@ class GeometryManager(models.Manager):
 
         ret = []
         for feature in features:
+            properties = feature['properties']
+            location_id = properties[location_id_name]
             geometry = self.model(
                 name=name,
                 geometry=GEOSGeometry(json.dumps(feature['geometry'])),
-                properties=feature['properties'],
+                properties=properties,
+                location_id_name=location_id_name,
+                location_id=location_id,
+                **kwargs,
             )
             geometry.save(using=settings.SPATIAL_DB)
             ret.append(geometry)
@@ -54,6 +59,8 @@ class Geometry(models.Model):
     name = models.CharField(max_length=256, blank=True, null=True)
     geometry = models.GeometryField(blank=True, null=True)
     properties = JSONField(default=dict)
+    location_id_name = models.CharField(max_length=256, blank=True, null=True)
+    location_id = models.CharField(max_length=256, blank=True, null=True)
 
     objects = GeometryManager()
 
@@ -72,15 +79,16 @@ class Geometry(models.Model):
 
 
 class DataSetManager(models.Manager):
-    def create_from_json(self, name=None, file=None, **kwargs):
+    def create_from_json(self, name=None, file=None, location_id_name=None, **kwargs):
         if file is None or not file.name.endswith(('.geojson', '.json')):
             raise ValueError('Provide a json or geojson file.')
 
-        geometries = Geometry.objects.create_from_json(file=file)
+        geometries = Geometry.objects.create_from_json(file=file, location_id_name=location_id_name)
         data_set = self.model(
             name=name,
             type='FeatureCollection',
             geometry_collection=GEOSGeometryCollection(tuple(g.geometry for g in geometries)),
+            location_id_name=location_id_name,
             **kwargs,
         )
         data_set.save(using=settings.SPATIAL_DB)

@@ -2,6 +2,7 @@ import re
 
 from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import FieldError
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import Document, Text, Date, Boolean, Integer, Long, Object, Nested
 from elasticsearch_dsl.connections import create_connection
@@ -110,13 +111,15 @@ def bulk_indexing(using=settings.STUDIO_DB):
             document_class.init(index=document_class.Index.name)
 
         for model_label in MODELS_TO_INDEX:
-            if not check_index_exists(model_label, using=alias):
+            if check_index_exists(model_label, using=alias):
                 model_class = get_model(model_label=model_label)
+                try:
+                    instances = model_class.objects.using(alias).filter(tracked=True)
+                except FieldError:
+                    instances = model_class.objects.using(alias).all()
                 bulk(
                     client=client,
-                    actions=(b.create_document() for b in model_class.objects.using(alias).filter(
-                        tracked=True,
-                    ).iterator())
+                    actions=(instance.create_document() for instance in instances.iterator())
                 )
 
 

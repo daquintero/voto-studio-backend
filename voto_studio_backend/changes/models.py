@@ -18,6 +18,7 @@ from voto_studio_backend.permissions.models import PermissionsBaseModel
 STUDIO_DB = settings.STUDIO_DB
 MAIN_SITE_DB = settings.MAIN_SITE_DB
 
+
 STAGE_CREATED = 'created'
 STAGE_UPDATED = 'updated'
 STAGE_DELETED = 'deleted'
@@ -64,7 +65,10 @@ class ChangeManager(models.Manager):
                 setattr(instance, field.name, f'{getattr(instance, field.name)}-{uuid.uuid4()}')
         for field in self._get_one_to_one_fields(instance):
             setattr(instance, f'{field.name}_id', None)
-        instance.save(using=STUDIO_DB)
+        if isinstance(instance, TrackedWorkshopModel):
+            instance.save(using=STUDIO_DB, to_index=False)
+        else:
+            instance.save(using=STUDIO_DB)
         base_instance = get_object_or_404(instance._meta.model, id=base_instance_id)
 
         return base_instance, instance
@@ -167,15 +171,19 @@ class ChangeManager(models.Manager):
 
         return changes
 
-    def get_for_instance(self, instance, request=None, committed=False):
+    def get_for_instance(self, instance, committed=False):
         """
         Get a collection of either all committed or all non-committed
         changes for an instance, ordered by date with earliest first.
         """
         content_type = _get_content_type(instance=instance)
-        changes = Change.objects.filter(content_type=content_type, user=request.user, committed=committed)
+        changes = Change.objects.filter(content_type=content_type, base_id=instance.id, committed=committed)
 
         return changes
+
+    def commit_for_instance(self, instance):
+        changes = self.get_for_instance(instance)
+        return [change.commit() for change in changes.order_by('date_created')]
 
 
 class Change(models.Model):
@@ -233,31 +241,38 @@ class Change(models.Model):
 
         return get_object_or_404(self.content_type.model_class().objects.using(using), id=instance_id)
 
+    def _parse_json_fields(self, instance):
+        fields = instance._meta.model._meta.get_fields()
+        for field in fields:
+            if field.name == 'statistics':
+                statistics = instance.statistics
+                parsed_statistics = []
+                for sub_instance in statistics['sub_instances']:
+                    parsed_statistics.append({
+                      f['name']: f['value'] for f in sub_instance['fields']
+                    })
+                instance.statistics = parsed_statistics
+
+        return instance
+
     def commit(self):
         """
         Commit a change instance and propagate changes through to the frontend database. Will
-        create a new instance or update/delete an existing one. Will also take care of any
-        ManyToMany relationships.
+        create a new instance or update/delete an existing one.
         """
+        if self.stage_type == STAGE_CREATED or self.stage_type == STAGE_UPDATED:
+            instance = self._get_instance(using=STUDIO_DB, base=False)
+            instance = self._parse_json_fields(instance)
+            instance.id = self.base_id
+            instance.tracked = True
+            instance.save(using=MAIN_SITE_DB)
+
         if self.stage_type == STAGE_DELETED:
-            # TODO: Do we need to non-fake delete from the STUDIO_DB?
             instance = self._get_instance(using=STUDIO_DB)
             instance.delete(fake=False, using=STUDIO_DB)
 
             instance = self._get_instance(using=MAIN_SITE_DB)
             instance.delete(fake=False, using=MAIN_SITE_DB)
-
-        if self.stage_type == STAGE_CREATED or self.stage_type == STAGE_UPDATED:
-            instance = self._get_instance(using=STUDIO_DB, base=False)
-            instance.id = self.base_id
-            for field_name, rel_id in self.one_to_one_models.items():
-                setattr(instance, f'{field_name[0]}_id', rel_id)
-
-            instance.save(using=MAIN_SITE_DB)
-
-            for field_name, rel_ids in self.many_to_many_models.items():
-                field = getattr(instance, field_name)
-                field.set(field.model.objects.using(MAIN_SITE_DB).filter(id__in=rel_ids))
 
         self.committed = True
         self.date_committed = timezone.now()
@@ -317,17 +332,20 @@ RELATIONSHIPS = 'rels'
 REFERENCES = 'refs'
 
 
-def get_rels_dict_default(fields=None, single_dict_only=False):
-    single_dict = {
+def _get_single_dict(model_label):
+    return {
         RELATIONSHIPS: [],
         REFERENCES: [],
+        'model_label': model_label,
     }
 
-    if single_dict_only:
-        return single_dict
-    else:
+
+def get_rels_dict_default(field=None, fields=None):
+    if field is not None:
+        return _get_single_dict(field.related_model._meta.label)
+    if fields is not None:
         return {
-            field.name: single_dict for field in fields
+            field.name: _get_single_dict(field.related_model._meta.label) for field in fields
         }
 
 
@@ -343,7 +361,7 @@ class TrackedWorkshopModelManager(models.Manager):
     def create(self, **kwargs):
         instance = super().create(**kwargs)
         instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
-        instance.save(using=settings.STUDIO_DB)
+        instance.save(using=settings.STUDIO_DB, to_index=False)
 
         return instance
 
@@ -351,7 +369,7 @@ class TrackedWorkshopModelManager(models.Manager):
         instance, new = super().get_or_create(**kwargs)
         if new:
             instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
-            instance.save(using=settings.STUDIO_DB)
+            instance.save(using=settings.STUDIO_DB, to_index=False)
 
         return instance, new
 
@@ -386,6 +404,10 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     class Meta:
         abstract = True
 
+    def save(self, *args, to_index=True, **kwargs):
+        self.to_index = to_index
+        super().save(*args, **kwargs)
+
     def _get_field_value(self, field=None, field_name=None):
         _field_name = field_name
         if field is not None:
@@ -398,6 +420,7 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
         for key, inner_rel_dict in rels_dict.items():
             flattened_inner_rel_dict = {
                 key: {
+                    **inner_rel_dict,
                     RELATIONSHIPS: list(set(inner_rel_dict[RELATIONSHIPS])),
                     REFERENCES: list(set(inner_rel_dict[REFERENCES])),
                 },
