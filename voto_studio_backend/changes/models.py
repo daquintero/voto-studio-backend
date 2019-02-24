@@ -244,14 +244,17 @@ class Change(models.Model):
     def _parse_json_fields(self, instance):
         fields = instance._meta.model._meta.get_fields()
         for field in fields:
-            if field.name == 'statistics':
-                statistics = instance.statistics
-                parsed_statistics = []
-                for sub_instance in statistics['sub_instances']:
-                    parsed_statistics.append({
-                      f['name']: f['value'] for f in sub_instance['fields']
-                    })
-                instance.statistics = parsed_statistics
+            if field.name in ('statistics', 'experience'):
+                sub_instances = getattr(instance, field.name)['sub_instances']
+                parsed_field = []
+                if len(sub_instances):
+                    for sub_instance in sub_instances:
+                        parsed_field.append({
+                          field['name']: field['value'] for field in sub_instance['fields']
+                        })
+                    setattr(instance, field.name, parsed_field)
+                else:
+                    setattr(instance, field.name, [])
 
         return instance
 
@@ -356,7 +359,7 @@ class TrackedWorkshopModelManager(models.Manager):
         many_to_many_fields = [field for field in many_to_many_fields
                                if field.name not in self.model.hidden_fields]
         many_to_many_fields = [field for field in many_to_many_fields
-                               if not field.related_model._meta.model_label.startswith('media')]
+                               if not field.related_model._meta.label.startswith('media')]
 
         return many_to_many_fields
 

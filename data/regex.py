@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 import re
 
@@ -302,6 +303,7 @@ FIELD_MODEL_MAP = {
     'organizations': 'political.Organization',
     'laws': 'political.Law',
     'electoral_periods': 'political.ElectoralPeriod',
+    'corruption_cases': 'political.CorruptionCase',
     'informative_snippets': 'corruption.InformativeSnippet',
     'images': 'media.Image',
     'videos': 'media.Video',
@@ -309,13 +311,19 @@ FIELD_MODEL_MAP = {
 }
 
 
+class UpdateError(Exception):
+    pass
+
+
 def update_rels_dict(model_class):
     user = User.objects.get(email='migration@bot.com')
     request = RequestFactory()
     request.user = user
     instances = model_class.objects.filter(tracked=True)
+    if not instances.count():
+        raise UpdateError(f"No '{model_class._meta.label}' instances")
     for index, instance in enumerate(instances):
-        if not index % int(instances.count() / 10):
+        if not index % math.ceil(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
         rels_dict = instance.rels_dict
         for key in list(rels_dict.keys()):

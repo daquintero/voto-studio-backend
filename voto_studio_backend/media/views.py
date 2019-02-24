@@ -6,15 +6,26 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from . import models
 from . import serializers
+from shared.utils import get_model
 
 
-class ListImageAPI(APIView):
+MODEL_SERIALIZER_MAP = {
+    'media.Image': serializers.ImageSerializer,
+    'media.Video': serializers.VideoSerializer,
+    'media.Resource': serializers.ResourceSerializer,
+}
+
+
+class ListFileAPI(APIView):
     authentication_classes = (TokenAuthentication, )
 
     @staticmethod
     def get(request):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
+        model_label = request.GET.get('ml')
+        model_class = get_model(model_label=model_label)
 
         page_number = int(request.GET.get('page'))
         page_size = 24
@@ -24,13 +35,13 @@ class ListImageAPI(APIView):
 
         exclude_ids = request.GET.get('exclude').split('-')
         if not exclude_ids == ['']:
-            images = models.Image.objects.exclude(id__in=exclude_ids).order_by('-date_uploaded')
+            instances = model_class.objects.exclude(id__in=exclude_ids).order_by('-date_uploaded')
         else:
-            images = models.Image.objects.all().order_by('-date_uploaded')
+            instances = model_class.objects.all().order_by('-date_uploaded')
 
         response = {
-            'instances': serializers.ImageSerializer(images[s1:s2], many=True).data,
-            'image_count': models.Image.objects.count(),
+            'instances': MODEL_SERIALIZER_MAP[model_label](instances[s1:s2], many=True).data,
+            'instance_count': model_class.objects.count(),
             'page_size': page_size,
             'page_number': page_number,
         }
@@ -38,7 +49,7 @@ class ListImageAPI(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class UploadImageAPI(APIView):
+class UploadFileAPI(APIView):
     authentication_classes = (TokenAuthentication, )
 
     @staticmethod
@@ -46,18 +57,21 @@ class UploadImageAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        image_instances = []
+        model_label = request.data['model_label']
+        model_class = get_model(model_label=model_label)
+
+        instances = []
         for file in request.FILES.values():
-            image_instance = models.Image.objects.create(
+            instance = model_class.objects.create(
                 title=file.name,
                 user=request.user,
             )
-            image_instance.image.save(file.name, file)
-            image_instances.append(image_instance)
+            model_class.save_file(file.name, file)
+            instances.append(instance)
 
         response = {
-            'instances': serializers.ImageSerializer(image_instances, many=True).data,
-            'image_count': models.Image.objects.count(),
+            'instances': MODEL_SERIALIZER_MAP[model_label](instances, many=True).data,
+            'image_count': model_class.objects.count(),
         }
 
         if response['instances']:
@@ -66,7 +80,7 @@ class UploadImageAPI(APIView):
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateImageAPI(APIView):
+class UpdateFileAPI(APIView):
     authentication_classes = (TokenAuthentication, )
 
     @staticmethod
@@ -74,21 +88,24 @@ class UpdateImageAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
+        model_label = request.data.get('model_label')
+        model_class = get_model(model_label=model_label)
+
         id = request.data.get('id')
         title = request.data.get('title')
 
-        image_instance = get_object_or_404(models.Image, id=id)
-        image_instance.title = title
-        image_instance.save(using=settings.STUDIO_DB)
+        instance = get_object_or_404(model_class, id=id)
+        instance.title = title
+        instance.save(using=settings.STUDIO_DB)
 
         response = {
-            'instance': serializers.ImageSerializer(image_instance).data,
+            'instance': MODEL_SERIALIZER_MAP[model_label](instance).data,
         }
 
         return Response(response, status=status.HTTP_200_OK)
 
 
-class DeleteImageAPI(APIView):
+class DeleteFilesAPI(APIView):
     authentication_classes = (TokenAuthentication, )
 
     @staticmethod
@@ -96,14 +113,17 @@ class DeleteImageAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
+        model_label = request.data.get('model_label')
+        model_class = get_model(model_label=model_label)
+
         ids = [int(_id) for _id in request.data.get('ids')]
-        instances = models.Image.objects.filter(id__in=ids)
+        instances = model_class.objects.filter(id__in=ids)
         for instance in instances:
             instance.delete(reduce_order=True)
 
         response = {
             'ids':  ids,
-            'image_count': models.Image.objects.count(),
+            'image_count': model_class.objects.count(),
         }
 
         return Response(response, status=status.HTTP_200_OK)

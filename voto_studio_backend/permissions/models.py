@@ -56,11 +56,11 @@ class PermissionsBaseModel(models.Model):
 
     def is_permitted(self, user, operation):
         if user.is_researcher:
-            if operation == COMMIT_OPERATION:
-                return True
-            migration_bot = get_object_or_404(User, email='migration@bot.com')
-            if self.user == migration_bot:
-                return True
+            # if operation == COMMIT_OPERATION:
+            return True
+            # migration_bot = get_object_or_404(User, email='migration@bot.com')
+            # if self.user == migration_bot:
+            #     return True
         if user == self.user and not operation == COMMIT_OPERATION:
             return True
         if user in self.permitted_users.all():

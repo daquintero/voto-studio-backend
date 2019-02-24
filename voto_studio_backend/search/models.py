@@ -84,7 +84,6 @@ class IndexingMixin:
             user=getattr(getattr(self, 'user', None), 'id', None),
             table_values=self.get_table_values(),
             **self.get_kwargs(),
-            refresh=True,
             views=0,
         )
         obj.save(index=build_index_name(model_label, using=using))
@@ -98,7 +97,6 @@ class IndexingMixin:
         document.update(
             table_values=self.get_table_values(),
             **self.get_kwargs(),
-            refresh=True,
         )
 
         return document

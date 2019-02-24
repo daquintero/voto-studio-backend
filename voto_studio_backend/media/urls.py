@@ -9,23 +9,23 @@ api_v1 = settings.API_URL_V1
 
 urlpatterns = [
     path(
-        f'{api_v1}/list_images/',
-        views.ListImageAPI.as_view(),
-        name='list_images',
+        f'{api_v1}/list_files/',
+        views.ListFileAPI.as_view(),
+        name='list_files',
     ),
     path(
-        f'{api_v1}/upload_images/',
-        views.UploadImageAPI.as_view(),
-        name='upload_images',
+        f'{api_v1}/upload_files/',
+        views.UploadFileAPI.as_view(),
+        name='upload_files',
     ),
     path(
-        f'{api_v1}/update_image/',
-        views.UpdateImageAPI.as_view(),
-        name='update_image',
+        f'{api_v1}/update_file/',
+        views.UpdateFileAPI.as_view(),
+        name='update_file',
     ),
     path(
-        f'{api_v1}/delete_images/',
-        views.DeleteImageAPI.as_view(),
-        name='delete_images',
+        f'{api_v1}/delete_files/',
+        views.DeleteFilesAPI.as_view(),
+        name='delete_files',
     ),
 ]
