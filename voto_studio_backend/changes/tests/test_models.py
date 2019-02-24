@@ -199,8 +199,8 @@ class ChangeTests(ESTestCase):
         new_instance = create_instance(user=self.user)
         base_instance = models.Change.objects.stage_created(new_instance, self.request)
 
-        changes = models.Change.objects.get_for_instance(new_instance, self.request, committed=False)
-        change = changes[0]
+        changes = models.Change.objects.get_for_instance(base_instance)
+        change = changes.last()
 
         instance = change._get_instance(using=settings.STUDIO_DB, base=True)
         self.assertEqual(instance, base_instance)
@@ -344,7 +344,7 @@ class ChangeGroupManagerTests(TestCase):
         base_instance.save(using=settings.STUDIO_DB)
         base_instance = models.Change.objects.stage_updated(base_instance, self.request)
 
-        changes = models.Change.objects.get_for_instance(base_instance, request=self.request, committed=False)
+        changes = models.Change.objects.get_for_instance(base_instance, committed=False)
         change_ids = [c.id for c in changes.order_by('date_created')]
 
         response = models.ChangeGroup.objects.bulk_commit(changes, self.request)
