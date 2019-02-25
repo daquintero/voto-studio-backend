@@ -58,6 +58,8 @@ class CorruptionCase(TrackedWorkshopModel):
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
     controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
+    individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
+    corruption_cases = models.ManyToManyField('self', blank=True, related_name=related_name)
 
     table_descriptors = (
         'title',

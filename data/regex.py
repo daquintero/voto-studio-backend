@@ -4,7 +4,7 @@ import re
 
 from django.conf import settings
 from django.test import RequestFactory
-from voto_studio_backend.changes.models import Change, Statistics
+from voto_studio_backend.changes.models import Change, Statistics, get_rels_dict_default
 from voto_studio_backend.political.models import Individual, Law, Organization, Controversy
 from voto_studio_backend.users.models import User
 
@@ -304,6 +304,7 @@ FIELD_MODEL_MAP = {
     'laws': 'political.Law',
     'electoral_periods': 'political.ElectoralPeriod',
     'corruption_cases': 'political.CorruptionCase',
+    'controversies': 'political.Controversy',
     'informative_snippets': 'corruption.InformativeSnippet',
     'images': 'media.Image',
     'videos': 'media.Video',
@@ -332,6 +333,29 @@ def update_rels_dict(model_class):
             else:
                 rels_dict.pop(key)
 
+        instance.rels_dict = rels_dict
+        instance.save(using=settings.STUDIO_DB)
+        Change.objects.stage_updated(instance, request)
+    print('100%')
+
+
+def add_new_fields_to_rels_dict(model_class):
+    instances = model_class.objects.filter(tracked=True)
+    if not instances.count():
+        raise UpdateError(f"No '{model_class._meta.label}' instances")
+    for index, instance in enumerate(instances):
+        if not index % math.ceil(instances.count() / 10):
+            print(f'{round(index / instances.count() * 100)}%')
+        rels_dict = instance.rels_dict
+        for field in model_class._meta.many_to_many:
+            if not (field.related_model._meta.label.startswith('media') or
+                    field.name in rels_dict.keys()):
+                print(field.related_model._meta.label)
+                rels_dict.update({field.name: get_rels_dict_default(field)})
+
+        user = User.objects.get(email='migration@bot.com')
+        request = RequestFactory()
+        request.user = user
         instance.rels_dict = rels_dict
         instance.save(using=settings.STUDIO_DB)
         Change.objects.stage_updated(instance, request)
