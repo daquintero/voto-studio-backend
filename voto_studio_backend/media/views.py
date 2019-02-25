@@ -4,7 +4,6 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from . import models
 from . import serializers
 from shared.utils import get_model
 
@@ -24,7 +23,7 @@ class ListFileAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.GET.get('ml')
+        model_label = request.GET.get('ml', 'media.Image')
         model_class = get_model(model_label=model_label)
 
         page_number = int(request.GET.get('page'))
@@ -41,7 +40,8 @@ class ListFileAPI(APIView):
 
         response = {
             'instances': MODEL_SERIALIZER_MAP[model_label](instances[s1:s2], many=True).data,
-            'instance_count': model_class.objects.count(),
+            'image_count': model_class.objects.count(),
+            # 'instance_count': model_class.objects.count(),
             'page_size': page_size,
             'page_number': page_number,
         }
@@ -57,7 +57,7 @@ class UploadFileAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.data['model_label']
+        model_label = request.data.get('model_label', 'media.Image')
         model_class = get_model(model_label=model_label)
 
         instances = []
@@ -88,7 +88,7 @@ class UpdateFileAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.data.get('model_label')
+        model_label = request.data.get('model_label', 'media.Image')
         model_class = get_model(model_label=model_label)
 
         id = request.data.get('id')
@@ -113,7 +113,7 @@ class DeleteFilesAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.data.get('model_label')
+        model_label = request.data.get('model_label', 'media.Image')
         model_class = get_model(model_label=model_label)
 
         ids = [int(_id) for _id in request.data.get('ids')]
