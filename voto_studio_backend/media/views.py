@@ -23,7 +23,7 @@ class ListFileAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.GET.get('ml', 'media.Image')
+        model_label = request.GET.get('ml')
         model_class = get_model(model_label=model_label)
 
         page_number = int(request.GET.get('page'))
@@ -40,10 +40,10 @@ class ListFileAPI(APIView):
 
         response = {
             'instances': MODEL_SERIALIZER_MAP[model_label](instances[s1:s2], many=True).data,
-            'image_count': model_class.objects.count(),
-            # 'instance_count': model_class.objects.count(),
+            'instance_count': model_class.objects.count(),
             'page_size': page_size,
             'page_number': page_number,
+            'model_label': model_label,
         }
 
         return Response(response, status=status.HTTP_200_OK)
@@ -57,7 +57,7 @@ class UploadFileAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.data.get('model_label', 'media.Image')
+        model_label = request.data['model_label']
         model_class = get_model(model_label=model_label)
 
         instances = []
@@ -66,12 +66,12 @@ class UploadFileAPI(APIView):
                 title=file.name,
                 user=request.user,
             )
-            model_class.save_file(file.name, file)
+            instance.save_file(file)
             instances.append(instance)
 
         response = {
             'instances': MODEL_SERIALIZER_MAP[model_label](instances, many=True).data,
-            'image_count': model_class.objects.count(),
+            'instance_count': model_class.objects.count(),
         }
 
         if response['instances']:
@@ -113,7 +113,7 @@ class DeleteFilesAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        model_label = request.data.get('model_label', 'media.Image')
+        model_label = request.data['model_label']
         model_class = get_model(model_label=model_label)
 
         ids = [int(_id) for _id in request.data.get('ids')]

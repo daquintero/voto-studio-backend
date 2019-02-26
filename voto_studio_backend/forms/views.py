@@ -533,7 +533,7 @@ class UpdateMediaOrderAPI(APIView):
         media_type = request.data.get('media_type')
 
         model_class = get_model(model_label=model_label)
-        instance = get_object_or_403(model_class, id=instance_id)
+        instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
 
         if not instance.can_write(request.user):
             return Response({

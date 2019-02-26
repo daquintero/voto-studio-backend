@@ -52,6 +52,10 @@ class Image(BaseMediaModel):
     def __str__(self):
         return f'{self.id} <{self.title}>'
 
+    def save_file(self, file):
+        self.image = file
+        self.save(using=settings.STUDIO_DB)
+
 
 class Video(BaseMediaModel):
     title = models.CharField(default=str, max_length=32, blank=True)
@@ -97,3 +101,7 @@ class Resource(BaseMediaModel):
 
     def __str__(self):
         return f'{self.id} <{self.title}>'
+
+    def save_file(self, file):
+        self.file = file
+        self.save(using=settings.STUDIO_DB)

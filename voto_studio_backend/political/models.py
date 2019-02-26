@@ -171,7 +171,7 @@ class Individual(TrackedWorkshopModel):
 class Organization(TrackedWorkshopModel):
     related_name = 'organizations'
 
-    name = models.CharField(_('Name'), max_length=2048, default=str, unique=True)
+    name = models.CharField(_('Name'), max_length=2048, default=str)
     alias = models.CharField(_('Alias'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
