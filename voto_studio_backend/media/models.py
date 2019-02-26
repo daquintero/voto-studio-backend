@@ -58,7 +58,7 @@ class Image(BaseMediaModel):
 
 
 class Video(BaseMediaModel):
-    title = models.CharField(default=str, max_length=32, blank=True)
+    title = models.CharField(default=str, max_length=2048, blank=True)
     embed_url = models.URLField(max_length=2048, blank=True)
 
     table_descriptors = (
@@ -78,7 +78,7 @@ class Video(BaseMediaModel):
 
 
 class Resource(BaseMediaModel):
-    title = models.CharField(default=str, max_length=32, blank=True)
+    title = models.CharField(default=str, max_length=2048, blank=True)
     brief_description = models.CharField(default=str, max_length=128)
     icon = models.CharField(default=str, max_length=32, blank=True)
     file = models.FileField(upload_to='resources/', blank=True, null=True)
