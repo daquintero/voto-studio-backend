@@ -45,16 +45,30 @@ MEDIA_MODEL_KEYS = (
 
 
 MEDIA_MODEL_MAPPINGS = {
-    'images': Image,
-    'videos': Video,
+    'media.Image': Image,
+    'media': Video,
     'resources': Resource,
 }
 
 
 MEDIA_SERIALIZER_MAPPINGS = {
+    'media.Image': ImageSerializer,
+    'media.Video': VideoSerializer,
+    'media.Resource': ResourceSerializer,
+}
+
+
+MEDIA_FIELD_SERIALIZER_MAPPINGS = {
     'images': ImageSerializer,
     'videos': VideoSerializer,
     'resources': ResourceSerializer,
+}
+
+
+MODEL_FIELD_MAP = {
+    'media.Image': 'images',
+    'media.Video': 'videos',
+    'media.Resource': 'resources',
 }
 
 
@@ -280,9 +294,9 @@ def get_media_fields(model=None, instance=None):
 
 def get_related_fields(model=None, instance=None):
     related_fields = [
-        f for f in get_fields(model=model, instance=instance)
-        if (f.get_internal_type() == 'ManyToManyField' and
-            f.related_model not in MEDIA_MODELS)
+        f for f in model._meta.many_to_many
+        if (f.related_model not in MEDIA_MODELS and
+            f.name not in model.hidden_fields)
     ]
 
     return related_fields
@@ -339,6 +353,7 @@ class BuildFormAPI(APIView):
         } for field in basic_fields]
 
         related_fields = get_related_fields(model=model_class)
+        print(related_fields)
         related_fields_list = [{
             'name': field.name,
             'type': FIELD_TYPE_MAPPINGS[field.get_internal_type()],
@@ -384,7 +399,10 @@ class BuildFormAPI(APIView):
             for field in media_fields:
                 media_instances = [get_object_or_404(field.related_model, id=_id)
                                    for _id in instance.get_order(field.name)]
-                media_fields_dict[field.name] = MEDIA_SERIALIZER_MAPPINGS[field.name](media_instances, many=True).data
+                media_fields_dict[field.name] = MEDIA_FIELD_SERIALIZER_MAPPINGS[field.name](
+                    media_instances,
+                    many=True
+                ).data
 
         else:
             for field in basic_fields:
@@ -481,34 +499,35 @@ class UpdateMediaFieldAPI(APIView):
 
         model_label = request.data.get('model_label')
         instance_id = request.data.get('id')
-        media_type = request.data.get('media_type')
+        media_model_label = request.data.get('media_model_label')
         media_ids = request.data.get('media_ids')
         update_type = request.data.get('update_type')
 
         model_class = get_model(model_label=model_label)
         instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
 
-        media_instances = MEDIA_MODEL_MAPPINGS[media_type].objects.filter(id__in=media_ids)
-        field_value = get_field_value(instance, field_name=media_type)
+        media_instances = get_model(model_label=media_model_label).objects.filter(id__in=media_ids)
+        field_value = get_field_value(instance, field_name=MODEL_FIELD_MAP[media_model_label])
 
         if update_type == 'add':
             for media_instance in media_instances:
                 field_value.add(media_instance)
-                instance.extend_order(media_instance.id, media_type)
+                instance.extend_order(media_instance.id, MODEL_FIELD_MAP[media_model_label])
 
         if update_type == 'remove':
             for media_instance in media_instances:
                 field_value.remove(media_instance)
-                instance.reduce_order(media_instance.id, media_type)
+                instance.reduce_order(media_instance.id, MODEL_FIELD_MAP[media_model_label])
 
         base_instance = Change.objects.stage_updated(instance, request)
 
         response = {
             'id': base_instance.id,
             'media_ids': media_ids,
-            'media_type': media_type,
+            'media_model_label': media_model_label,
+            'media_type': MODEL_FIELD_MAP[media_model_label],
             'update_type': update_type,
-            'new_instances': MEDIA_SERIALIZER_MAPPINGS[media_type](media_instances, many=True).data,
+            'new_instances': MEDIA_SERIALIZER_MAPPINGS[media_model_label](media_instances, many=True).data,
         }
 
         return Response(response, status=status.HTTP_200_OK)

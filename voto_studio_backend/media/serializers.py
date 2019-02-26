@@ -4,6 +4,7 @@ from . import models
 
 class ImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+    model_label = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Image
@@ -11,13 +12,18 @@ class ImageSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'url',
+            'model_label',
         )
 
     def get_url(self, obj):
         return obj.image.url
 
+    def get_model_label(self, obj):
+        return obj._meta.model._meta.label
+
 
 class VideoSerializer(serializers.ModelSerializer):
+    model_label = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Video
@@ -25,11 +31,16 @@ class VideoSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'embed_url',
+            'model_label',
         )
+
+    def get_model_label(self, obj):
+        return obj._meta.model._meta.label
 
 
 class ResourceSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
+    model_label = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Video
@@ -37,7 +48,11 @@ class ResourceSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'url',
+            'model_label',
         )
 
     def get_url(self, obj):
         return obj.file.url
+
+    def get_model_label(self, obj):
+        return obj._meta.model._meta.label
