@@ -293,8 +293,9 @@ def get_media_fields(model=None, instance=None):
 
 
 def get_related_fields(model=None, instance=None):
+    model_class = model if instance is None else instance._meta.model
     related_fields = [
-        f for f in model._meta.many_to_many
+        f for f in model_class._meta.many_to_many
         if (f.related_model not in MEDIA_MODELS and
             f.name not in model.hidden_fields)
     ]
