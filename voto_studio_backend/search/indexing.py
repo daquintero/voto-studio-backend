@@ -95,6 +95,22 @@ def get_document_class(model_label, using=settings.STUDIO_DB):
     return document_classes[build_index_name(model_label, using=using)]
 
 
+def indexing(model_label, using=settings.STUDIO_DB):
+    """
+    Index existing instances for each model.
+    """
+    if check_index_exists(model_label, using=using):
+        model_class = get_model(model_label=model_label)
+        try:
+            instances = model_class.objects.using(using).filter(tracked=True)
+        except FieldError:
+            instances = model_class.objects.using(using).all()
+        bulk(
+            client=client,
+            actions=(instance.create_document(using=using) for instance in instances.iterator())
+        )
+
+
 def bulk_indexing(using=settings.STUDIO_DB):
     """
     Bulk index existing instances for each model.
