@@ -56,7 +56,6 @@ THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'channels',
 ]
 LOCAL_APPS = [
     'voto_studio_backend.users',
