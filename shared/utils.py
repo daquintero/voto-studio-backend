@@ -17,3 +17,13 @@ def hidden_fields(fields_tuple=(), defaults=True):
         return settings.BASE_HIDDEN_FIELDS + fields_tuple
     else:
         return fields_tuple
+
+
+def create_slice(page, size):
+    page = int(page)
+    size = int(size)
+
+    from_ = page * size
+    to = from_ + size
+
+    return from_, to

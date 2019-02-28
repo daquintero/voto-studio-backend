@@ -11,7 +11,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from shared.api.parsers import camel_to_underscore, underscore_to_camel
-from shared.utils import get_model
+from shared.utils import get_model, create_slice
 from . import serializers
 from voto_studio_backend.changes.models import Change, get_rels_dict_default
 from voto_studio_backend.media.models import Image, Video, Resource
@@ -750,6 +750,11 @@ class InstanceListAPI(APIView):
                 .annotate(search=SearchVector(*model_class.search_fields)) \
                 .filter(search=search)
 
+        page = request.GET.get('page', 0)
+        size = request.GET.get('size', 10)
+        from_, to = create_slice(page, size)
+        instances = instances[from_:to]
+
         response = {
             'count': model_class.objects.filter(tracked=True).count(),
             'list': {
@@ -797,6 +802,11 @@ class RelatedInstanceListAPI(APIView):
             instances = instances \
                 .annotate(search=SearchVector(*related_model_class.search_fields)) \
                 .filter(search=search)
+
+        page = request.GET.get('page', 0)
+        size = request.GET.get('size', 10)
+        from_, to = create_slice(page, size)
+        instances = instances[from_:to]
 
         response = {
             'count': related_model_class.objects.filter(tracked=True).count(),
