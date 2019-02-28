@@ -702,18 +702,25 @@ class DeleteInstanceAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        app_label = request.data.get('app_label')
-        model_name = request.data.get('model_name')
-        instance_id = request.data.get('id')
-        model_class = get_model(app_label=app_label, model_name=model_name)
+        model_label = request.data['model_label']
+        instance_ids = request.data['ids']
+        model_class = get_model(model_label=model_label)
 
-        instance = get_object_or_403(model_class, (request.user, 'delete'), id=instance_id)
-        instance = instance.delete(fake=True)
-        instance = Change.objects.stage_deleted(instance, request)
-        item = serializers.GeneralDetailSerializer(instance, model_class=model_class).data
+        for instance_id in instance_ids:
+            instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
+            instance.delete(fake=False)
+            Change.objects.stage_deleted(instance, request)
+
+            instance = get_object_or_403(
+                model_class.objects.using(settings.MAIN_SITE_DB),
+                (request.user, 'write'),
+                id=instance_id,
+            )
+            instance.delete(fake=False)
 
         response = {
-            'item': item,
+            'ids': instance_ids,
+            'model_label': model_label,
         }
 
         return Response(response, status=status.HTTP_200_OK)

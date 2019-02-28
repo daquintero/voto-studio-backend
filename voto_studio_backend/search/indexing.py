@@ -95,6 +95,30 @@ def get_document_class(model_label, using=settings.STUDIO_DB):
     return document_classes[build_index_name(model_label, using=using)]
 
 
+def indexing(model_label, using=settings.STUDIO_DB):
+    """
+    Index existing instances for each model.
+    """
+    if isinstance(using, str):
+        using = [using]
+    elif isinstance(using, list):
+        pass
+    else:
+        raise ValueError("'using' must be either a string or a list.")
+
+    for alias in using:
+        model_class = get_model(model_label=model_label)
+
+        try:
+            instances = model_class.objects.using(alias).filter(tracked=True)
+        except FieldError:
+            instances = model_class.objects.using(alias).all()
+        bulk(
+            client=client,
+            actions=(instance.create_document(using=alias) for instance in instances.iterator())
+        )
+
+
 def bulk_indexing(using=settings.STUDIO_DB):
     """
     Bulk index existing instances for each model.
