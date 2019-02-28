@@ -46,6 +46,7 @@ class InformativeSnippet(TrackedWorkshopModel):
     search_fields = (
         'title',
         'brief_description',
+        'user__email',
     )
 
 
@@ -85,6 +86,7 @@ class CorruptionCase(TrackedWorkshopModel):
     search_fields = (
         'title',
         'brief_description',
+        'user__email',
     )
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
@@ -122,4 +124,5 @@ class FinancialItem(TrackedWorkshopModel):
     search_fields = (
         'title',
         'brief_description',
+        'user__email',
     )

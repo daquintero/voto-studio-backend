@@ -611,6 +611,7 @@ class UpdateRelatedFieldAPI(APIView):
                 get_field_value(instance, field_name=field_name).remove(related_instance)
                 instance.remove_rel(field, related_instance)
 
+        instances = related_model_class.objects.filter(id__in=request.data.get('related_ids'))
         response = {
             'id': instance.id,
             'type': update_type,
@@ -623,7 +624,7 @@ class UpdateRelatedFieldAPI(APIView):
             'related_field': {
                 'model_label': related_model_class._meta.label,
                 'model_name_verbose': related_model_class._meta.verbose_name,
-                'instances': related_model_class.search.filter(must={'id': request.data.get('related_ids')}),
+                'instances': serializers.GeneralSerializer(instances, model_class=related_model_class, many=True).data,
                 'related_ids': request.data.get('related_ids'),
             },
         }

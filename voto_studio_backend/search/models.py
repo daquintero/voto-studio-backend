@@ -85,6 +85,7 @@ class IndexingMixin:
             table_values=self.get_table_values(),
             **self.get_kwargs(),
             views=0,
+            size='full',
         )
         obj.save(index=build_index_name(model_label, using=using))
 
@@ -96,6 +97,7 @@ class IndexingMixin:
         document = document_class.get(id=self.id, index=build_index_name(model_label, using=using))
         document.update(
             table_values=self.get_table_values(),
+            size='full',
             **self.get_kwargs(),
         )
 

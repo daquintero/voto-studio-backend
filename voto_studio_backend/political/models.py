@@ -106,6 +106,7 @@ class Law(TrackedWorkshopModel):
     search_fields = (
         'brief_description',
         'category',
+        'user__email',
     )
 
 
@@ -176,6 +177,7 @@ class Individual(TrackedWorkshopModel):
         'brief_description',
         'email',
         'type',
+        'user__email',
     )
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
@@ -232,6 +234,7 @@ class Organization(TrackedWorkshopModel):
         'brief_description',
         'email',
         'type',
+        'user__email',
     )
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
@@ -262,6 +265,7 @@ class Promise(TrackedWorkshopModel):
     search_fields = (
         'brief_description',
         'type',
+        'user__email',
     )
 
 
@@ -287,6 +291,7 @@ class Achievement(TrackedWorkshopModel):
     search_fields = (
         'brief_description',
         'type',
+        'user__email',
     )
 
 
@@ -313,6 +318,7 @@ class Controversy(TrackedWorkshopModel):
     search_fields = (
         'brief_description',
         'type',
+        'user__email',
     )
 
     class Meta:
@@ -356,6 +362,7 @@ class ElectoralPeriod(TrackedWorkshopModel):
         'brief_description',
         'period',
         'position',
+        'user__email',
     )
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
