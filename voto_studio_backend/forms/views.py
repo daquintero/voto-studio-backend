@@ -2,6 +2,7 @@ import json
 
 from django.apps import apps
 from django.conf import settings
+from django.contrib.postgres.search import SearchVector
 from django.db import IntegrityError
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, ManyToManyRel
 from django.shortcuts import get_object_or_404
@@ -150,16 +151,12 @@ def get_related_instances(instance, field, using=settings.STUDIO_DB):
     """
     if instance:
         model_class = field.related_model
-        instances = model_class.search.filter(
-            must={
-                'tracked': True,
-                'id': [o.id for o in get_field_value(instance, field=field).all()],
-            },
-            using=using,
-        )
+        instances = model_class.objects \
+            .using(using) \
+            .filter(tracked=True, id__in=[o.id for o in get_field_value(instance, field=field).all()])
 
         return {
-            'instances': instances,
+            'instances': serializers.GeneralSerializer(instances, model_class=model_class, many=True).data,
             'table_heads': model_class.get_table_heads(model_class, verbose=True),
         }
 
@@ -742,21 +739,21 @@ class InstanceListAPI(APIView):
             related_instances = get_field_value(instance, field_name=field_name).all()
             must_not = [instance.id for instance in related_instances]
 
-        # TODO: Elasticsearch implementation needs to be updated to return all instances where the user is in the permitted users.
+        instances = model_class.objects \
+            .filter(tracked=True) \
+            .exclude(id__in=must_not) \
+            .order_by('-id')
 
-        instances = model_class.search.filter(
-            must={'tracked': True},
-            must_not={'id': must_not},
-            page=request.GET.get('page'),
-            size=request.GET.get('size'),
-            sort='-id',
-            search=request.GET.get('search', False),
-        )
+        search = request.GET.get('search', None)
+        if search not in (None, ''):
+            instances = instances \
+                .annotate(search=SearchVector(*model_class.search_fields)) \
+                .filter(search=search)
 
         response = {
             'count': model_class.objects.filter(tracked=True).count(),
             'list': {
-                'instances': instances,
+                'instances': serializers.GeneralSerializer(instances, model_class=model_class, many=True).data,
                 'table_heads': model_class.get_table_heads(model_class, verbose=True),
                 'model_label': model_label,
                 'model_name': model_class._meta.model_name,
@@ -790,19 +787,21 @@ class RelatedInstanceListAPI(APIView):
             related_instances = get_field_value(instance, field_name=field_name).all()
             must_not = [instance.id for instance in related_instances]
 
-        instances = related_model_class.search.filter(
-            must={'tracked': True},
-            must_not={'id': must_not},
-            page=request.GET.get('page'),
-            size=request.GET.get('size'),
-            sort='-id',
-            search=request.GET.get('search', False),
-        )
+        instances = related_model_class.objects \
+            .filter(tracked=True) \
+            .exclude(id__in=must_not) \
+            .order_by('-id')
+
+        search = request.GET.get('search', None)
+        if search not in (None, ''):
+            instances = instances \
+                .annotate(search=SearchVector(*related_model_class.search_fields)) \
+                .filter(search=search)
 
         response = {
             'count': related_model_class.objects.filter(tracked=True).count(),
             'list': {
-                'instances': instances,
+                'instances': serializers.GeneralSerializer(instances, model_class=related_model_class, many=True).data,
                 'table_heads': related_model_class.get_table_heads(related_model_class, verbose=True),
                 'model_label': related_model_label,
                 'model_name': related_model_class._meta.model_name,

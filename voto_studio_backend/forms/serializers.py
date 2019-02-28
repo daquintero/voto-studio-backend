@@ -21,7 +21,7 @@ class GeneralSerializer(serializers.ModelSerializer):
         self.Meta.model = model_class
         super().__init__(*args, **kwargs)
 
-    table_values = serializers.SerializerMethodField(source='get_table_values')
+    table_values = serializers.ReadOnlyField(source='get_table_values')
 
     class Meta:
         model = None
