@@ -8,8 +8,6 @@ elasticsearch==6.3.1
 elasticsearch-dsl==6.3.1
 pandas==0.24.1
 xlrd==1.2.0
-channels==2.1.7
-channels-redis==2.3.3
 
 # Django
 # ------------------------------------------------------------------------------

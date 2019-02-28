@@ -15,6 +15,13 @@ MODEL_SERIALIZER_MAP = {
 }
 
 
+FIELD_SERIALIZER_MAP = {
+    'images': serializers.ImageSerializer,
+    'videos': serializers.VideoSerializer,
+    'resources': serializers.ResourceSerializer,
+}
+
+
 class ListFileAPI(APIView):
     authentication_classes = (TokenAuthentication, )
 

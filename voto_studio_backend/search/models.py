@@ -1,5 +1,3 @@
-import json
-
 from django.conf import settings
 from django.db import models
 from elasticsearch.exceptions import NotFoundError
@@ -58,6 +56,7 @@ class IndexingMixin:
         excluded_fields = (
             'password',
             'permissions_dict',
+            'order',
         )
 
         fields = [field for field in get_fields(model_class=self) if field.name not in excluded_fields]
@@ -76,6 +75,17 @@ class IndexingMixin:
 
         return ret
 
+    def get_media(self):
+        from voto_studio_backend.media.views import FIELD_SERIALIZER_MAP
+
+        ret = {}
+        for field_name, id_list in self.order.items():
+            media_model_class = getattr(self, field_name).model
+            media_instances = media_model_class.objects.filter(id__in=id_list)
+            ret.update({field_name: FIELD_SERIALIZER_MAP[field_name](media_instances, many=True).data})
+
+        return ret
+
     def create_document(self, using=settings.STUDIO_DB):
         model_label = self._meta.label
         obj = get_document_class(model_label, using=using)(
@@ -83,9 +93,10 @@ class IndexingMixin:
             model_label=model_label,
             user=getattr(getattr(self, 'user', None), 'id', None),
             table_values=self.get_table_values(),
-            **self.get_kwargs(),
-            views=0,
             size='full',
+            views=0,
+            media=self.get_media(),
+            **self.get_kwargs(),
         )
         obj.save(index=build_index_name(model_label, using=using))
 
@@ -98,6 +109,7 @@ class IndexingMixin:
         document.update(
             table_values=self.get_table_values(),
             size='full',
+            media=self.get_media(),
             **self.get_kwargs(),
         )
 
