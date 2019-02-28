@@ -99,23 +99,15 @@ def indexing(model_label, using=settings.STUDIO_DB):
     """
     Index existing instances for each model.
     """
-    if isinstance(using, str):
-        using = [using]
-    elif isinstance(using, list):
-        pass
-    else:
-        raise ValueError("'using' must be either a string or a list.")
-
-    for alias in using:
+    if check_index_exists(model_label, using=using):
         model_class = get_model(model_label=model_label)
-
         try:
-            instances = model_class.objects.using(alias).filter(tracked=True)
+            instances = model_class.objects.using(using).filter(tracked=True)
         except FieldError:
-            instances = model_class.objects.using(alias).all()
+            instances = model_class.objects.using(using).all()
         bulk(
             client=client,
-            actions=(instance.create_document(using=alias) for instance in instances.iterator())
+            actions=(instance.create_document(using=using) for instance in instances.iterator())
         )
 
 

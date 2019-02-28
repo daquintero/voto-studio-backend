@@ -43,6 +43,11 @@ class InformativeSnippet(TrackedWorkshopModel):
         ),
     }
 
+    search_fields = (
+        'title',
+        'brief_description',
+    )
+
 
 class CorruptionCase(TrackedWorkshopModel):
     """
@@ -77,6 +82,11 @@ class CorruptionCase(TrackedWorkshopModel):
         'related': (),
     }
 
+    search_fields = (
+        'title',
+        'brief_description',
+    )
+
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
@@ -108,3 +118,8 @@ class FinancialItem(TrackedWorkshopModel):
         ),
         'related': (),
     }
+
+    search_fields = (
+        'title',
+        'brief_description',
+    )

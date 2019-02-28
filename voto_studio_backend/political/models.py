@@ -103,6 +103,11 @@ class Law(TrackedWorkshopModel):
         'non_corruption_related_funds',
     )
 
+    search_fields = (
+        'brief_description',
+        'category',
+    )
+
 
 class Experience(JSONModel):
     id = JSONAutoField(unique=True)
@@ -165,6 +170,14 @@ class Individual(TrackedWorkshopModel):
         'non_corruption_related_funds',
     )
 
+    search_fields = (
+        'name',
+        'alias',
+        'brief_description',
+        'email',
+        'type',
+    )
+
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
@@ -213,6 +226,14 @@ class Organization(TrackedWorkshopModel):
         'related': (),
     }
 
+    search_fields = (
+        'name',
+        'alias',
+        'brief_description',
+        'email',
+        'type',
+    )
+
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
@@ -238,6 +259,11 @@ class Promise(TrackedWorkshopModel):
         'related': (),
     }
 
+    search_fields = (
+        'brief_description',
+        'type',
+    )
+
 
 class Achievement(TrackedWorkshopModel):
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
@@ -257,6 +283,11 @@ class Achievement(TrackedWorkshopModel):
         ),
         'related': (),
     }
+
+    search_fields = (
+        'brief_description',
+        'type',
+    )
 
 
 class Controversy(TrackedWorkshopModel):
@@ -278,6 +309,11 @@ class Controversy(TrackedWorkshopModel):
         ),
         'related': (),
     }
+
+    search_fields = (
+        'brief_description',
+        'type',
+    )
 
     class Meta:
         verbose_name_plural = 'Controversies'
@@ -315,5 +351,11 @@ class ElectoralPeriod(TrackedWorkshopModel):
         ),
         'related': (),
     }
+
+    search_fields = (
+        'brief_description',
+        'period',
+        'position',
+    )
 
     hidden_fields = hidden_fields(fields_tuple=('source',))

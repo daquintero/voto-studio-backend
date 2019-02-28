@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
+from django.contrib.postgres.search import SearchVector
 from django.shortcuts import get_object_or_404
 from rest_framework import authentication
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from . import models
 from . import serializers
 
@@ -75,13 +76,16 @@ class UserListAPI(APIView):
     @staticmethod
     def get(request):
         search_term = request.GET.get('search')
-        if search_term is not '':
-            users = models.User.search.filter(search=search_term, must_not={'id': request.user.id})
+        if search_term not in (None, ''):
+            users = models.User.objects \
+                .annotate(search=SearchVector('name', 'email')) \
+                .filter(search=search_term) \
+                .exclude(id=request.user.id)
         else:
             users = []
 
         response = {
-            'users': users,
+            'users': serializers.UserSerializer(users, many=True).data,
         }
 
         return Response(response, status=status.HTTP_200_OK)
