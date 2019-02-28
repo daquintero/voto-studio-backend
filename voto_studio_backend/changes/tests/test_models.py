@@ -14,7 +14,7 @@ from voto_studio_backend.users.models import User
 # TODO: are the ForeignKey relationships properly handled by the changes app?
 
 
-class ChangeManagerTests(ESTestCase):
+class ChangeManagerTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='foo@bar.com',
@@ -185,7 +185,7 @@ class ChangeManagerTests(ESTestCase):
         ...
 
 
-class ChangeTests(ESTestCase):
+class ChangeTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             email='foo@ModuleLevelFunctionTests.com',

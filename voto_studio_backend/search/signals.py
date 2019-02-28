@@ -4,11 +4,14 @@ from django.dispatch import receiver
 
 
 def to_index(sender, instance, using=settings.STUDIO_DB):
+    if sender._meta.label == settings.AUTH_USER_MODEL:
+        return False
     if not using == settings.MAIN_SITE_DB:
         return False
+    if not getattr(instance, 'to_index', True):
+        return False
     return (sender._meta.label in settings.MODELS_TO_INDEX and
-            instance.tracked and
-            getattr(instance, 'to_index', True))
+            instance.tracked)
 
 
 @receiver(post_save)

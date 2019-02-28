@@ -188,26 +188,24 @@ def get_options(instance, field, using=settings.STUDIO_DB):
             if isinstance(instance, related_model_class):
                 blacklist_ids.append(instance.id)
             blacklist_ids = list(filter(lambda el: bool(el), blacklist_ids))
-            instances = related_model_class.search.filter(
-                must={'tracked': True},
-                must_not={'id': blacklist_ids},
-                using=using,
-                size=90,
-            )
+
+            instances = related_model_class.objects \
+                .using(using) \
+                .filter(tracked=True) \
+                .exclude(id__in=blacklist_ids)
+
         else:
-            instances = related_model_class.search.filter(
-                must={'tracked': True},
-                using=using,
-                size=90,
-            )
+            instances = related_model_class.objects \
+                .using(using) \
+                .filter(tracked=True) \
 
         ret = {'options': []}
         for instance in instances:
-            label = f"ID: {instance.get('id')} "
-            for descriptor in instance['table_values']['descriptors']:
+            label = f"ID: {instance.id} "
+            for descriptor in instance.get_table_values()['descriptors']:
                 label += f"{descriptor['name'].capitalize()}: {descriptor['value'].capitalize()} "
                 ret['options'].append({
-                    'label': label, 'value': str(instance.get('id'))
+                    'label': label, 'value': str(instance.id)
                 })
         ret['options'].insert(0, {'label': 'None', 'value': ''})
 
@@ -688,7 +686,7 @@ class PublishInstancesAPI(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class DeleteInstanceAPI(APIView):
+class DeleteInstancesAPI(APIView):
     """
     Class providing API endpoints used to delete instances.
     """

@@ -16,7 +16,7 @@ class UserManager(BaseUserManager):
 
         if both_db:
             user.save(using=settings.STUDIO_DB)
-            user.save(using=settings.MAIN_SITE_DB)
+            user.save(using=settings.MAIN_SITE_DB, to_index=False)
         else:
             user.save(using=settings.STUDIO_DB)
 
@@ -65,6 +65,10 @@ class User(AbstractBaseUser, PermissionsMixin, InfoMixin, IndexingMixin):
 
     def __str__(self):
         return f"{self.name} <{self.email}>"
+
+    def save(self, *args, to_index=True, **kwargs):
+        self.to_index = to_index
+        super().save(*args, **kwargs)
 
     def get_profile_picture_url(self):
         default_image_url = 'https://s3.amazonaws.com/votoinformado2019/images/default_profile_picture.jpg'

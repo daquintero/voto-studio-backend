@@ -64,8 +64,8 @@ urlpatterns = [
         name='publish_instances',
     ),
     path(
-        f'{api_v1}/delete_instance/',
-        views.DeleteInstanceAPI.as_view(),
-        name='delete_instance',
+        f'{api_v1}/delete_instances/',
+        views.DeleteInstancesAPI.as_view(),
+        name='delete_instances',
     ),
 ]
