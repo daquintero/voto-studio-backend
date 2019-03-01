@@ -1,5 +1,6 @@
 import uuid
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -335,6 +336,13 @@ RELATIONSHIPS = 'rels'
 REFERENCES = 'refs'
 
 
+MEDIA_MODELS = (
+    'media.Image',
+    'media.Video',
+    'media.Resource',
+)
+
+
 def _get_single_dict(model_label):
     return {
         RELATIONSHIPS: [],
@@ -349,6 +357,7 @@ def get_rels_dict_default(field=None, fields=None):
     if fields is not None:
         return {
             field.name: _get_single_dict(field.related_model._meta.label) for field in fields
+            if field.related_model._meta.label not in MEDIA_MODELS
         }
 
 
