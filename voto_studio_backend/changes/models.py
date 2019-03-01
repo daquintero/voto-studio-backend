@@ -269,6 +269,12 @@ class Change(models.Model):
             instance = self._parse_json_fields(instance)
             instance.id = self.base_id
             instance.tracked = True
+
+            # Remove all ForeignKeys
+            fk_fields = [field for field in instance._meta.get_fields()
+                         if field.get_internal_type() == 'ForeignKey']
+            for fk_field in fk_fields:
+                setattr(instance, f'{fk_field.name}_id', None)
             instance.save(using=MAIN_SITE_DB)
 
         if self.stage_type == STAGE_DELETED:
@@ -343,47 +349,62 @@ MEDIA_MODELS = (
 )
 
 
-def _get_single_dict(model_label):
-    return {
-        RELATIONSHIPS: [],
-        REFERENCES: [],
-        'model_label': model_label,
-    }
+def _get_single_dict(field):
+    field_type = field.get_internal_type()
+    model_label = field.related_model._meta.label
+
+    if field_type == 'OneToOneField':
+        return {
+            'id': None,
+            'model_label': model_label,
+            'type': field_type,
+        }
+    if field_type == 'ForeignKey':
+        return {
+            'ids': [],
+            'model_label': model_label,
+            'type': field_type,
+        }
+    if field_type == 'ManyToManyField':
+        return {
+            RELATIONSHIPS: [],
+            REFERENCES: [],
+            'model_label': model_label,
+            'type': field_type,
+        }
 
 
 def get_rels_dict_default(field=None, fields=None):
     if field is not None:
-        return _get_single_dict(field.related_model._meta.label)
+        return _get_single_dict(field)
     if fields is not None:
         return {
-            field.name: _get_single_dict(field.related_model._meta.label) for field in fields
+            field.name: _get_single_dict(field) for field in fields
             if field.related_model._meta.label not in MEDIA_MODELS
         }
 
 
 class TrackedWorkshopModelManager(models.Manager):
-    def _get_many_to_many(self):
-        many_to_many_fields = [field for field in self.model._meta.get_fields()
-                               if field.many_to_many]
-        many_to_many_fields = [field for field in many_to_many_fields
-                               if field.name not in self.model.hidden_fields]
-        many_to_many_fields = [field for field in many_to_many_fields
-                               if not field.related_model._meta.label.startswith('media')]
+    def _get_fields(self):
+        fields = [field for field in self.model._meta.get_fields() if field.is_relation]
+        fields = [field for field in fields if field.name not in self.model.hidden_fields]
+        fields = [field for field in fields if not field.related_model._meta.label.startswith('media')]
 
-        return many_to_many_fields
+        return fields
 
     def create(self, **kwargs):
-        instance = super().create(**kwargs)
-        instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
-        instance.save(using=settings.STUDIO_DB, to_index=False)
+        instance = super().create(
+            rels_dict=get_rels_dict_default(fields=self._get_fields()),
+            ** kwargs,
+        )
 
         return instance
 
     def get_or_create(self, **kwargs):
-        instance, new = super().get_or_create(**kwargs)
-        if new:
-            instance.rels_dict = get_rels_dict_default(fields=self._get_many_to_many())
-            instance.save(using=settings.STUDIO_DB, to_index=False)
+        try:
+            instance, new = self.get(**kwargs), False
+        except self.model.DoesNotExist:
+            instance, new = self.create(**kwargs), True
 
         return instance, new
 
@@ -432,36 +453,76 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     def _flatten_rels_dict(rels_dict):
         ret = {}
         for key, inner_rel_dict in rels_dict.items():
-            flattened_inner_rel_dict = {
-                key: {
-                    **inner_rel_dict,
-                    RELATIONSHIPS: list(set(inner_rel_dict[RELATIONSHIPS])),
-                    REFERENCES: list(set(inner_rel_dict[REFERENCES])),
-                },
-            }
+            if inner_rel_dict['type'] == 'OneToOneField':
+                flattened_inner_rel_dict = {key: inner_rel_dict}
+            elif inner_rel_dict['type'] == 'ForeignKey':
+                flattened_inner_rel_dict = {
+                    key: {
+                        **inner_rel_dict,
+                        'ids': list(set(inner_rel_dict['ids']))
+                    }
+                }
+            elif inner_rel_dict['type'] == 'ManyToManyField':
+                flattened_inner_rel_dict = {
+                    key: {
+                        **inner_rel_dict,
+                        RELATIONSHIPS: list(set(inner_rel_dict[RELATIONSHIPS])),
+                        REFERENCES: list(set(inner_rel_dict[REFERENCES])),
+                    },
+                }
+            else:
+                flattened_inner_rel_dict = inner_rel_dict
             ret.update(flattened_inner_rel_dict)
 
         return ret
 
-    def _add_to_rels_dict(self, field, instance, rel_level):
+    def _add_to_rels_dict(self, field, instance, rel_level=None):
+        field_type = field.get_internal_type()
         rels_dict = self.rels_dict
-        if rel_level == RELATIONSHIPS:
-            ins_rels_dict = instance.rels_dict
-            ins_rels_dict[self._meta.model.related_name][RELATIONSHIPS].append(self.id)
-            instance.rels_dict = self._flatten_rels_dict(ins_rels_dict)
-            instance.save(using=settings.STUDIO_DB)
 
-        rels_dict[field.name][rel_level].append(instance.id)
+        if field_type == 'OneToOneField':
+            rels_dict[field.name]['id'] = instance.id
+            ins_rels_dict = instance.rels_dict
+            ins_rels_dict[field.remote_field.name]['id'] = self.id
+
+        elif field_type == 'ForeignKey':
+            rels_dict[field.name]['ids'] = [instance.id]
+            ins_rels_dict = instance.rels_dict
+            ins_rels_dict[field.remote_field.name]['ids'].append(self.id)
+
+        elif field_type == 'ManyToManyField':
+            if rel_level == RELATIONSHIPS:
+                ins_rels_dict = instance.rels_dict
+                ins_rels_dict[self._meta.model.related_name][RELATIONSHIPS].append(self.id)
+            rels_dict[field.name][rel_level].append(instance.id)
+
+        print('ins_rels_dict', ins_rels_dict)
+        instance.rels_dict = self._flatten_rels_dict(ins_rels_dict)
+        instance.save(using=settings.STUDIO_DB)
+
+        print('rels_dict', rels_dict)
         self.rels_dict = self._flatten_rels_dict(rels_dict)
         self.save(using=settings.STUDIO_DB)
 
     def _remove_from_rels_dict(self, field, instance):
+        field_type = field.get_internal_type()
         rels_dict = self.rels_dict
-        for rel_level in (RELATIONSHIPS, REFERENCES):
-            try:
-                rels_dict[field.name][rel_level].remove(instance.id)
-            except ValueError:
-                pass
+
+        if field_type == 'OneToOneField':
+            rels_dict[field.name]['id'] = None
+        elif field_type == 'ForeignKey':
+            rels_dict[field.name]['ids'].remove(instance.id)
+            ins_rels_dict = instance.rels_dict
+            ins_rels_dict[self._meta.model_name.lower()]['ids'].remove(self.id)
+            instance.rels_dict = self._flatten_rels_dict(ins_rels_dict)
+            instance.save(using=settings.STUDIO_DB)
+        elif field_type == 'ManyToManyField':
+            for rel_level in (RELATIONSHIPS, REFERENCES):
+                try:
+                    rels_dict[field.name][rel_level].remove(instance.id)
+                except ValueError:
+                    pass
+
         self.rels_dict = self._flatten_rels_dict(rels_dict)
         self.save(using=settings.STUDIO_DB)
 
@@ -494,7 +555,7 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
 
     def add_rel(self, field, instance):
         self._get_field_value(field=field).add(instance)
-        self._add_to_rels_dict(field, instance, RELATIONSHIPS)
+        self._add_to_rels_dict(field, instance, rel_level=RELATIONSHIPS)
 
     def remove_rel(self, field, instance):
         self._get_field_value(field=field).remove(instance)
@@ -502,10 +563,18 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
 
     def add_ref(self, field, instance):
         self._get_field_value(field=field).add(instance)
-        self._add_to_rels_dict(field, instance, REFERENCES)
+        self._add_to_rels_dict(field, instance, rel_level=REFERENCES)
 
     def remove_ref(self, field, instance):
         self.remove_rel(field, instance)
+
+    def add_fk(self, field, instance):
+        setattr(self, f'{field.name}_id', instance.id)
+        self._add_to_rels_dict(field, instance)
+
+    def remove_fk(self, field, instance):
+        setattr(self, f'{field.name}_id', None)
+        self._remove_from_rels_dict(field, instance)
 
 
 class ChangeGroupManager(models.Manager):

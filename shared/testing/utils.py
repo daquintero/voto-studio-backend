@@ -42,6 +42,8 @@ def create_test_user(test_method):
 
 
 def create_instance(**kwargs):
-    instance = BasicModel.objects.db_manager(using=settings.STUDIO_DB).create_with_defaults(user=kwargs.get('user'))
+    instance = BasicModel.objects \
+        .db_manager(using=settings.STUDIO_DB) \
+        .create_with_defaults(user=kwargs.get('user'))
 
     return instance

@@ -13,7 +13,6 @@ def _is_numeric(model_class, table_head):
 class InfoMixin:
     def _get_descriptor_value(self, descriptor):
         field = getattr(self, descriptor)
-
         if hasattr(field, 'choices'):
             ret = field.label
         else:

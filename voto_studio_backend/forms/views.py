@@ -203,10 +203,10 @@ def get_options(instance, field, using=settings.STUDIO_DB):
         for instance in instances:
             label = f"ID: {instance.id} "
             for descriptor in instance.get_table_values()['descriptors']:
-                label += f"{descriptor['name'].capitalize()}: {descriptor['value'].capitalize()} "
-                ret['options'].append({
-                    'label': label, 'value': str(instance.id)
-                })
+                label += f"{descriptor['name'].replace('_', ' ').capitalize()}: {descriptor['value'].capitalize()} | "
+            ret['options'].append({
+                'label': label, 'value': str(instance.id)
+            })
         ret['options'].insert(0, {'label': 'None', 'value': ''})
 
         return ret
@@ -349,7 +349,6 @@ class BuildFormAPI(APIView):
         } for field in basic_fields]
 
         related_fields = get_related_fields(model=model_class)
-        print(related_fields)
         related_fields_list = [{
             'name': field.name,
             'type': FIELD_TYPE_MAPPINGS[field.get_internal_type()],
@@ -458,7 +457,16 @@ class UpdateBasicFieldsAPI(APIView):
                     else:
                         setattr(instance, field.name, values[field.name]['value'])
                 else:
-                    setattr(instance, f'{field.name}_id', values[field.name]['value'])
+                    related_instance_id = values[field.name]['value']
+                    if related_instance_id:
+                        related_instance = get_object_or_404(field.related_model, id=related_instance_id)
+                        instance.add_fk(field, related_instance)
+                        Change.objects.stage_updated(related_instance, request)
+                    else:
+                        related_instance = getattr(instance, field.name)
+                        if related_instance:
+                            instance.remove_fk(field, related_instance)
+                            Change.objects.stage_updated(related_instance, request)
 
         try:
             instance.save(using=settings.STUDIO_DB)
@@ -660,6 +668,10 @@ class InstanceDetailAPI(APIView):
         return Response(response, status=status.HTTP_200_OK,)
 
 
+class PublishError(Exception):
+    pass
+
+
 class PublishInstancesAPI(APIView):
     """
     Class providing API endpoints used to publish changes.
@@ -679,6 +691,11 @@ class PublishInstancesAPI(APIView):
         instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_ids[0])
 
         committed_changes = Change.objects.commit_for_instance(instance)
+
+        if not len(committed_changes):
+            raise PublishError({
+                'message': 'No changes have been made since the last publish.'
+            })
 
         response = {
             'changes_committed': [c.id for c in committed_changes],

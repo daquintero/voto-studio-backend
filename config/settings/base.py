@@ -259,9 +259,7 @@ BASE_HIDDEN_FIELDS = (
     'rels_dict',
 )
 
-MODELS_TO_INDEX = (
-    'users.User',
-)
+MODELS_TO_INDEX = ()
 MODELS_TO_INDEX += WORKSHOP_MODELS
 
 DATABASE_ROUTERS = ['config.router.GeneralRouter']
