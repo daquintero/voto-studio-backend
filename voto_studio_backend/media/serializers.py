@@ -5,6 +5,7 @@ from . import models
 class ImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     model_label = serializers.SerializerMethodField()
+    gallery_obj = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Image
@@ -13,6 +14,7 @@ class ImageSerializer(serializers.ModelSerializer):
             'title',
             'url',
             'model_label',
+            'gallery_obj',
         )
 
     def get_url(self, obj):
@@ -20,6 +22,13 @@ class ImageSerializer(serializers.ModelSerializer):
 
     def get_model_label(self, obj):
         return obj._meta.model._meta.label
+
+    def get_gallery_obj(self, obj):
+        return {
+            'original': obj.image.url,
+            'thumbnail': obj.image.url,
+            'brief_description': obj.title,
+        }
 
 
 class VideoSerializer(serializers.ModelSerializer):
