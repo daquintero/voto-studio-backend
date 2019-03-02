@@ -385,12 +385,12 @@ def remove_field_from_rels_dict(model_class, field_name):
         if not index % math.ceil(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
         rels_dict = instance.rels_dict
-        del rels_dict[field_name]
+        try:
+            del rels_dict[field_name]
+            print(f"Deleted {field_name} on instance with ID {instance.id} ------------------------------------------")
+        except KeyError:
+            print(f"Instance with ID {instance.id} didn't have key {field_name} in rels_dict.")
 
-        user = User.objects.get(email='migration@bot.com')
-        request = RequestFactory()
-        request.user = user
         instance.rels_dict = rels_dict
         instance.save(using=settings.STUDIO_DB)
-        Change.objects.stage_updated(instance, request)
     print('100%')
