@@ -220,29 +220,6 @@ class UpdateBasicFieldsAPITests(TransactionTestCase):
         self.assertEqual(updated_instance.choice_field, new_data['choice_field']['value'])
         self.assertEqual(updated_instance.one_to_one_field.id, new_data['one_to_one_field']['value'])
 
-        # As you can't set an instance as a OneToOne if it is
-        # already a member of a OneToOne relationship we should
-        # test this case. Even though the user shouldn't be able
-        # to trigger this error as any instances that are already
-        # in a OneToOne relationship are omitted from the choices
-        # of instances in a OneToOne select box, we should still
-        # check this by making a bad request.
-        # extra_related_instance = create_instance(user=self.user)
-        # related_instance.one_to_one_field = extra_related_instance
-        # related_instance.save(using=settings.STUDIO_DB)
-        #
-        # response = self.client.post(reverse('forms:update_basic_fields'), {
-        #     'model_label': 'test_app.BasicModel',
-        #     'id': self.instance.id,
-        #     'values': json.dumps({
-        #         'one_to_one_field': {'value': extra_related_instance.id},
-        #     }),
-        # })
-        #
-        # # Make sure we get a 400 HTTP code rather
-        # # than a 500 server error.
-        # self.assertEqual(response.status_code, 400)
-
 
 # class UpdateRelatedFieldAPITests(TestCase):
 #     def setUp(self):

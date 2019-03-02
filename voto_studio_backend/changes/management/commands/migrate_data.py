@@ -5,7 +5,7 @@ from data.regex import migrate
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        ans = input(f'This will being by clearing ALL change instances, ALl forms instances and reset ALL indices! '
+        ans = input(f'This will begin by clearing ALL change instances, ALl forms instances and reset ALL indices! '
                     f'Do you wish to continue? [y/N] ')
         confirm = ans.lower() == 'y'
 

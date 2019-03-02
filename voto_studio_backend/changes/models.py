@@ -496,11 +496,9 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
                 ins_rels_dict[self._meta.model.related_name][RELATIONSHIPS].append(self.id)
             rels_dict[field.name][rel_level].append(instance.id)
 
-        print('ins_rels_dict', ins_rels_dict)
         instance.rels_dict = self._flatten_rels_dict(ins_rels_dict)
         instance.save(using=settings.STUDIO_DB)
 
-        print('rels_dict', rels_dict)
         self.rels_dict = self._flatten_rels_dict(rels_dict)
         self.save(using=settings.STUDIO_DB)
 

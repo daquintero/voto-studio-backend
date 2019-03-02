@@ -152,12 +152,13 @@ def create_orgs(data, user):
         print(f'{round(index/71*100, ndigits=3)}%')
         data = {}
         try:
-            org = Organization.objects.create(
+            org, new = Organization.objects.get_or_create(
                 name=row['Political_Party_Name'],
                 user=user,
                 type=2,
             )
-            base_org = Change.objects.stage_created(org, request)
+            if not new:
+                base_org = Change.objects.stage_created(org, request)
         except:
             pass
 
@@ -246,7 +247,7 @@ def parse_data(data, user):
 
         base_instance = Change.objects.stage_created(individual, request)
 
-        org = Organization.objects.get(name=row['Political_Party_Name'])
+        org = Organization.objects.get(name=row['Political_Party_Name'], tracked=True)
         org.individuals.add(base_instance)
         org.add_rel(Organization._meta.get_field('individuals'), base_instance)
         base_org = Change.objects.stage_updated(org, request)
@@ -347,12 +348,9 @@ def add_new_fields_to_rels_dict(model_class):
         if not index % math.ceil(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
         rels_dict = instance.rels_dict
-        for field in model_class._meta.many_to_many:
-            if not (field.related_model._meta.label.startswith('media') or
-                    field.name in rels_dict.keys() or
-                    field.name in ('permitted_users',)):
-                print(field.related_model._meta.label)
-                rels_dict.update({field.name: get_rels_dict_default(field)})
+        for field in model_class.objects._get_fields():
+            print(field.related_model._meta.label)
+            rels_dict.update({field.name: get_rels_dict_default(field=field)})
 
         user = User.objects.get(email='migration@bot.com')
         request = RequestFactory()
