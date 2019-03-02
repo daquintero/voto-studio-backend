@@ -3,6 +3,7 @@ import pandas as pd
 import re
 
 from django.conf import settings
+from django.db.models.fields.related import ManyToOneRel
 from django.test import RequestFactory
 from voto_studio_backend.changes.models import Change, Statistics, get_rels_dict_default
 from voto_studio_backend.political.models import Individual, Law, Organization, Controversy
@@ -340,8 +341,9 @@ def update_rels_dict(model_class):
     print('100%')
 
 
-def add_new_fields_to_rels_dict(model_class):
-    instances = model_class.objects.filter(tracked=True)
+def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB):
+    instances = model_class.objects.using(using).filter(tracked=True)
+    # instances = [model_class.objects.get(id=4572)]
     if not instances.count():
         raise UpdateError(f"No '{model_class._meta.label}' instances")
     for index, instance in enumerate(instances):
@@ -349,15 +351,33 @@ def add_new_fields_to_rels_dict(model_class):
             print(f'{round(index / instances.count() * 100)}%')
         rels_dict = instance.rels_dict
         for field in model_class.objects._get_fields():
-            print(field.related_model._meta.label)
-            rels_dict.update({field.name: get_rels_dict_default(field=field)})
+            if field.name not in rels_dict.keys():
+                rels_dict.update({field.name: get_rels_dict_default(field=field)})
+            else:
+                field_type = field.get_internal_type()
+                inner_rels_dict = get_rels_dict_default(field=field)
+                if field_type == 'OneToOneField':
+                    id_ = getattr(getattr(instance, field.name, None), 'id', None)
+                    inner_rels_dict['id'] = id_
+                elif field_type == 'ForeignKey':
+                    if isinstance(field, ManyToOneRel):
+                        ids = [obj.id for obj in getattr(instance, f'{field.name}_set').filter(tracked=True)]
+                    else:
+                        ids = getattr(getattr(instance, field.name, None), 'id', None)
+                        ids = [ids] if ids is not None else []
+                    inner_rels_dict['ids'] = ids
+                elif field_type == 'ManyToManyField':
+                    ids = [obj.id for obj in getattr(instance, field.name).all()]
+                    inner_rels_dict['rels'] = ids
 
-        user = User.objects.get(email='migration@bot.com')
-        request = RequestFactory()
-        request.user = user
+                rels_dict[field.name] = inner_rels_dict
+
+        # user = User.objects.get(email='migration@bot.com')
+        # request = RequestFactory()
+        # request.user = user
         instance.rels_dict = rels_dict
-        instance.save(using=settings.STUDIO_DB)
-        Change.objects.stage_updated(instance, request)
+        instance.save(using=using)
+        # Change.objects.stage_updated(instance, request)
     print('100%')
 
 
