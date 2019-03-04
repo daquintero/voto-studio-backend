@@ -4,7 +4,7 @@ Base settings to build other settings files upon.
 
 import environ
 
-ROOT_DIR = environ.Path(__file__) - 3  # (voto_studio_backend/config/settings/base.py - 3 = voto_backend/)
+ROOT_DIR = environ.Path(__file__) - 3  # (voto_studio_backend/config/settings/base.py - 3 = voto_studio_backend/)
 APPS_DIR = ROOT_DIR.path('voto_studio_backend')
 env = environ.Env()
 
@@ -245,7 +245,6 @@ WORKSHOP_MODELS = (
     'political.Promise',
     'political.Achievement',
     'political.Controversy',
-    'political.ElectoralPeriod',
 )
 
 BASE_HIDDEN_FIELDS = (

@@ -75,8 +75,8 @@ class Law(TrackedWorkshopModel):
     This can be mapped to them to see their effectiveness in the
     National Assembly or what were the interests of the laws they created, or whom did they affect.
     """
-    code = models.CharField(_('Law Code'), max_length=128, blank=True, null=True)
-    brief_description = models.CharField(_('Description'), max_length=128, blank=True, null=True)
+    code = models.CharField(_('Law Code'), max_length=256, blank=True, null=True)
+    brief_description = models.CharField(_('Brief Description'), max_length=2048, blank=True, null=True)
     long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     category = models.CharField(_('Category'), choices=CATEGORIES, max_length=140, blank=True, null=True)
 
@@ -139,6 +139,9 @@ class Individual(TrackedWorkshopModel):
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
     individuals = models.ManyToManyField('self', blank=True, related_name=related_name)
     laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
+    controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
+    promises = models.ManyToManyField('political.Promise', blank=True, related_name=related_name)
+    achievements = models.ManyToManyField('political.Achievement', blank=True, related_name=related_name)
 
     table_descriptors = (
         'name',
@@ -203,6 +206,12 @@ class Organization(TrackedWorkshopModel):
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
     organizations = models.ManyToManyField('self', blank=True, related_name=related_name)
     individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
+    informative_snippets = models.ManyToManyField(
+        'corruption.InformativeSnippet', blank=True, related_name=related_name)
+    corruption_cases = models.ManyToManyField('corruption.CorruptionCase', blank=True, related_name=related_name)
+    controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
+    promises = models.ManyToManyField('political.Promise', blank=True, related_name=related_name)
+    achievements = models.ManyToManyField('political.Achievement', blank=True, related_name=related_name)
 
     table_descriptors = (
         'name',
@@ -241,11 +250,11 @@ class Organization(TrackedWorkshopModel):
 
 
 class Promise(TrackedWorkshopModel):
+    title = models.CharField(_('Title'), max_length=2048, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
+    long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     type = models.CharField(_('Type'), choices=CATEGORIES, max_length=128, blank=True, null=True)
     fulfilled = models.BooleanField(default=False)
-
-    individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
 
     table_descriptors = (
         'brief_description',
@@ -270,10 +279,10 @@ class Promise(TrackedWorkshopModel):
 
 
 class Achievement(TrackedWorkshopModel):
+    title = models.CharField(_('Title'), max_length=2048, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
+    long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     type = models.CharField(_('Type'), choices=CATEGORIES, max_length=128, blank=True, null=True)
-
-    individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
 
     table_descriptors = (
         'brief_description',
@@ -296,11 +305,10 @@ class Achievement(TrackedWorkshopModel):
 
 
 class Controversy(TrackedWorkshopModel):
+    title = models.CharField(_('Title'), max_length=2048, default=str)
     brief_description = models.CharField(_('Description'), max_length=2048, blank=True, null=True)
+    long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
     type = models.CharField(_('Type'), choices=CATEGORIES, max_length=128, blank=True, null=True)
-
-    individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True)
 
     table_descriptors = (
         'brief_description',
@@ -323,46 +331,3 @@ class Controversy(TrackedWorkshopModel):
 
     class Meta:
         verbose_name_plural = 'Controversies'
-
-
-class ElectoralPeriod(TrackedWorkshopModel):
-    related_name = 'electoral_periods'
-
-    individual = models.ForeignKey('political.Individual', blank=True, null=True, on_delete=models.SET_NULL)
-    brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
-    long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
-    period = models.CharField(_('Period'), choices=ELECTORAL_PERIODS, max_length=128, blank=True, null=True)
-    position = models.CharField(_('Position'), choices=POLITICAL_POSITIONS, max_length=128, blank=True, null=True)
-    attendance_percentage = models.FloatField(_('Attendance Percentage'), blank=True, null=True, default=float)
-    published_public_finances = models.BooleanField(_('Published Public Finances'), default=False)
-
-    laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
-    financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
-
-    table_descriptors = (
-        'period',
-        'position',
-        'attendance_percentage',
-        'published_public_finances',
-    )
-
-    detail_descriptors = {
-        'basic': (
-            'brief_description',
-            'long_description',
-            'period',
-            'position',
-            'attendance_percentage',
-            'published_public_finances'
-        ),
-        'related': (),
-    }
-
-    search_fields = (
-        'brief_description',
-        'period',
-        'position',
-        'user__email',
-    )
-
-    hidden_fields = hidden_fields(fields_tuple=('source',))

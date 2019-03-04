@@ -7,5 +7,4 @@ register_models('political', models={
     'Promise': ['default', 'main_site'],
     'Achievement': ['default', 'main_site'],
     'Controversy': ['default', 'main_site'],
-    'ElectoralPeriod': ['default', 'main_site'],
 })

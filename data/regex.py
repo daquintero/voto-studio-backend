@@ -14,10 +14,10 @@ def name_regex(name):
     alias_regex = re.compile(r"'(\w*)'", re.DOTALL)
     try:
         raw_alias = re.search(alias_regex, name).group(0)
-        alias = re.sub("'", "", raw_alias)
-        full_name = re.sub(" " + raw_alias, "", name)
+        alias = re.sub("'", '', raw_alias)
+        full_name = re.sub(' ' + raw_alias, '', name)
     except AttributeError:
-        alias = ""
+        alias = ''
         full_name = name
 
     return full_name, alias
@@ -25,61 +25,48 @@ def name_regex(name):
 
 def laws_regex(laws_string):
     try:
-        # Extract info regex
         separate_laws = laws_string.split('\n')
-        law_number_regex = re.compile("(^Ley (\d+))|(^Proyecto (\d+))( /(\d+))?(  /(\d+))?")
+        law_number_regex = re.compile('(^Ley (\d+)?( /(\d+)))|(^Proyecto (\d+))( /(\d+))?(  /(\d+))?')
         laws_compendium = []
         for raw_law in separate_laws:
             try:
                 full_meta = law_number_regex.match(raw_law).group(1)
                 law_number = law_number_regex.match(raw_law).group(2)
-                law_description = re.sub(full_meta, "", raw_law)
-                law = {'law_number' : law_number, 'law_description': law_description}
+                law_description = re.sub(full_meta, '', raw_law)
+                law = {'law_number': law_number, 'law_description': law_description}
                 laws_compendium.append(law)
             except AttributeError:
-                print("Law did not match" + raw_law)
-                pass
+                print(f'Law did not match {raw_law}')
             except IndexError:
-                print("Laws did not match" + raw_law)
-                pass
+                print(f'Law did not match {raw_law}')
             except TypeError:
-                print("Laws did not match" + raw_law)
-                pass
+                print(f'Law did not match {raw_law}')
         return laws_compendium
     except AttributeError:
-        print("Did not split ")
-        print(laws_string)
-        pass
+        print(f'Did not split {laws_string}')
 
 
 def projects_regex(laws):
     try:
-        law_number_regex = re.compile("^Proyecto de ley (\d+)( /(\d+))?")
+        law_number_regex = re.compile('^Proyecto de ley (\d+)( /(\d+))?')
         laws_compendium = []
         for raw_law in laws:
             try:
                 full_meta = law_number_regex.match(raw_law).group(0)
                 law_number = law_number_regex.match(raw_law).group(1)
-                raw_law_description = re.sub(full_meta, "", raw_law)
-                law_description = "%s%s" % (raw_law_description[1].upper(), raw_law_description[2:])
+                raw_law_description = re.sub(full_meta, '', raw_law)
+                law_description = f'{raw_law_description[1].upper()}{raw_law_description[2:]}'
                 law = {'law_number': law_number, 'law_description': law_description}
                 laws_compendium.append(law)
             except AttributeError:
-                print("Law did not match ATT")
-                print(laws)
-                pass
+                print(f'Law did not match ATT {laws}')
             except IndexError:
-                print("Laws did not match IND ")
-                print(laws)
-                pass
+                print(f'Laws did not match IND {laws}')
             except TypeError:
-                print("Laws did not match TYPE")
-                print(laws)
-                pass
+                print(f'Laws did not match TYPE {laws}')
         return laws_compendium
     except AttributeError:
-        print("Oh Oh----------- ")
-        print(laws)
+        print(f'Oh Oh----------- {laws}')
 
 
 def social_media_regex(full_url, domain):
@@ -102,7 +89,7 @@ def create_law_projects(data, user):
             for index, law_dict in enumerate(laws_regex(row['Law_Projects'])):
                 print(f'Migrating law {index}...')
                 law = Law.objects.create(
-                    long_description=law_dict['law_description'],
+                    brief_description=law_dict['law_description'],
                     code=law_dict['law_number'],
                     user=user,
                     category=17,
@@ -117,16 +104,24 @@ def create_law_projects(data, user):
     return laws
 
 
+class TrackedError(Exception):
+    pass
+
+
 def create_controversies(data, user):
     print('Creating controversies...')
     request = RequestFactory()
     request.user = user
 
-    first_individual_id = Individual.objects.all().order_by('id')[0].id
+    first_individual_id = Individual.objects.filter(user=user).first().id
 
     for index, row in data.iterrows():
         print(f'{round(index/520*100, ndigits=3)}%')
-        individual = Individual.objects.get(id=first_individual_id + row['id'])
+        id_ = first_individual_id+2*(row['id']-1)
+        individual = Individual.objects.get(id=id_)
+
+        if not individual.tracked:
+            raise TrackedError(f"Instance {individual} is not tracked!")
 
         controversy = Controversy.objects.create(
             brief_description=row['controversias'],
@@ -137,11 +132,10 @@ def create_controversies(data, user):
 
         # A dict that defines all the fks can be added
         # to ES only after the migrations have been done.
-        controversy.individual = individual
-        controversy.save()
+        individual.controversies.add(controversy)
+        individual.add_rel(individual._meta.get_field('controversies'), controversy)
 
         base_controversy = Change.objects.stage_created(controversy, request)
-        base_individual = Change.objects.stage_updated(individual, request)
 
 
 def create_orgs(data, user):
@@ -151,20 +145,17 @@ def create_orgs(data, user):
 
     for index, row in data.iterrows():
         print(f'{round(index/71*100, ndigits=3)}%')
-        data = {}
         try:
             org, new = Organization.objects.get_or_create(
                 name=row['Political_Party_Name'],
                 user=user,
                 type=2,
             )
-            if not new:
-                base_org = Change.objects.stage_created(org, request)
         except:
             pass
 
-
-default_statistics = Statistics()()
+        if not new:
+            base_org = Change.objects.stage_created(org, request)
 
 
 def parse_data(data, user):
@@ -258,7 +249,7 @@ def parse_data(data, user):
             for index, law_dict in enumerate(laws_regex(row['Leyes'])):
                 print(f'Migrating law {index}...')
                 law = Law.objects.create(
-                    long_description=law_dict['law_description'],
+                    brief_description=law_dict['law_description'],
                     code=law_dict['law_number'],
                     user=user,
                     location_id_name='CIRCUITO',
@@ -275,14 +266,12 @@ def parse_data(data, user):
         base_instance.laws.set(laws)
         for law in laws:
             base_instance.add_rel(Individual._meta.get_field('laws'), law)
-        base_instance = Change.objects.stage_updated(base_instance, request)
-        base_law_instances = Change.objects.bulk_stage_updated(laws, request)
 
 
-def migrate():
+def migrate(user='migration@bot.com'):
     try:
         user = User.objects.create_user(
-            email='migration@bot.com',
+            email=user,
             name='Migration Bot',
             password='Migrate123',
         )

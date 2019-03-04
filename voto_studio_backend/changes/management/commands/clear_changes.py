@@ -1,12 +1,17 @@
 from django.core.management.base import BaseCommand
+from django.contrib.auth import get_user_model
 from voto_studio_backend.changes.models import Change
 
 
 class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--bypass', action='store', dest='bypass', help='Bypass the confirmation step')
+        parser.add_argument('--user', action='store', dest='user', help='Clear instances for only this user')
 
     def handle(self, *args, **options):
+        user = options.get('user')
+        user = get_user_model().objects.get(email=user)
+
         if not options.get('bypass'):
             ans = input(f'This will clear ALL change instances! Do you wish to continue? [y/N] ')
             confirm = ans.lower() == 'y'
@@ -14,8 +19,9 @@ class Command(BaseCommand):
             confirm = True
 
         if confirm:
-            change_count = Change.objects.count()
-            Change.objects.all().delete()
+            instances = Change.objects.filter(user=user)
+            change_count = instances.count()
+            instances.delete()
             self.stdout.write(f'Deleted {change_count} change instances.')
         else:
             self.stdout.write('Cancelled.')
