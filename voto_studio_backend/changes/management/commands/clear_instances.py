@@ -1,7 +1,7 @@
-from django.conf import settings
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
 from django.apps import apps
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -12,8 +12,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         using = options.get('using')
-        user = options.get('user', '')
-        user = get_user_model().objects.get(email=user)
+        user = options.get('user')
+
+        filter_kwargs = {}
+        if not user == 'all':
+            user = get_user_model().objects.get(email=user)
+            filter_kwargs.update({'user': user})
 
         if not options.get('bypass'):
             ans = input(f'This will clear ALL form instances on {using}! Do you wish to continue? [y/N] ')
@@ -25,8 +29,9 @@ class Command(BaseCommand):
             total_objects = 0
             for model_label in settings.WORKSHOP_MODELS:
                 model_class = apps.get_model(*model_label.split('.'))
-                total_objects += model_class.objects.using(using).count()
-                model_class.objects.using(using).filter(user=user).delete()
+                instances = model_class.objects.using(using).filter(**filter_kwargs)
+                total_objects += instances.count()
+                instances.delete()
             self.stdout.write(f'Deleted {total_objects} instances.')
         else:
             self.stdout.write('Cancelled.')
