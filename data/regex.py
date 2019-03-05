@@ -117,7 +117,7 @@ def create_controversies(data, user):
 
     for index, row in data.iterrows():
         print(f'{round(index/520*100, ndigits=3)}%')
-        id_ = first_individual_id+2*(row['id']-1)
+        id_ = first_individual_id+3*(row['id']-1)
         individual = Individual.objects.get(id=id_)
 
         if not individual.tracked:
@@ -264,6 +264,7 @@ def parse_data(data, user):
         base_instance.laws.set(laws)
         for law in laws:
             base_instance.add_rel(Individual._meta.get_field('laws'), law)
+        base_instance = Change.objects.stage_updated(base_instance, request)
 
 
 def migrate(user='migration@bot.com'):

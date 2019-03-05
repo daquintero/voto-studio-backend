@@ -65,7 +65,10 @@ class IndexingMixin:
             if field.get_internal_type() == 'JSONField':
                 ret.update({field.name: getattr(self, field.name)})
             else:
-                ret.update({field.name: parse_value(field, getattr(self, field.name))})
+                if len(field.choices):
+                    ret.update({field.name: getattr(self, f'get_{field.name}_display')()})
+                else:
+                    ret.update({field.name: parse_value(field, getattr(self, field.name))})
 
         if hasattr(self, 'search_method_fields'):
             for method_field_name in self.search_method_fields:
@@ -86,29 +89,32 @@ class IndexingMixin:
 
         return ret
 
+    def get_user(self):
+        user = getattr(self, 'user', None)
+        if user is not None:
+            return user.id
+        return None
+
     def create_document(self, using=settings.STUDIO_DB):
         model_label = self._meta.label
         obj = get_document_class(model_label, using=using)(
             meta={'id': self.id},
             model_label=model_label,
-            user=getattr(getattr(self, 'user', None), 'id', None),
-            table_values=self.get_table_values(),
             size='full',
-            views=0,
+            user=self.get_user(),
             media=self.get_media(),
             **self.get_kwargs(),
         )
-        obj.save(index=build_index_name(model_label, using=using))
+        obj.save(index=build_index_name(model_label=model_label, using=using))
 
         return obj.to_dict(include_meta=True)
 
     def update_document(self, using=settings.STUDIO_DB):
         model_label = self._meta.label
         document_class = get_document_class(model_label, using=using)
-        document = document_class.get(id=self.id, index=build_index_name(model_label, using=using))
+        document = document_class.get(id=self.id, index=build_index_name(model_label=model_label, using=using))
         document.update(
-            table_values=self.get_table_values(),
-            size='full',
+            user=self.get_user(),
             media=self.get_media(),
             **self.get_kwargs(),
         )
@@ -119,5 +125,5 @@ class IndexingMixin:
         try:
             query = self._meta.model.search.get_query(must={'id': self.id}, using=using)
             query.delete()
-        except NotFoundError as e:
+        except NotFoundError:
             pass

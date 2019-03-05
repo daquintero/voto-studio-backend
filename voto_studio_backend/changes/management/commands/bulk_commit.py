@@ -24,7 +24,7 @@ class Command(BaseCommand):
             confirm = True
 
         if confirm:
-            changes = Change.objects.filter(user=user, committed=False)
+            changes = Change.objects.filter(user=user, committed=False).order_by('date_created')
             [change.commit() for change in changes]
             self.stdout.write(f'Committed {changes.count()} instances.')
         else:

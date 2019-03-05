@@ -12,11 +12,11 @@ def _is_numeric(model_class, table_head):
 
 class InfoMixin:
     def _get_descriptor_value(self, descriptor):
-        field = getattr(self, descriptor)
-        if hasattr(field, 'choices'):
-            ret = field.label
+        field = self._meta.model._meta.get_field(descriptor)
+        if len(field.choices):
+            ret = getattr(self, f'get_{field.name}_display')()
         else:
-            ret = str(field)
+            ret = str(getattr(self, field.name))
 
         return ret
 

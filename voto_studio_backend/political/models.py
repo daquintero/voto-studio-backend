@@ -1,10 +1,14 @@
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils.translation import ugettext_lazy as _
 from shared.utils import hidden_fields
+
 from voto_studio_backend.changes.models import TrackedWorkshopModel
 from voto_studio_backend.forms.models import JSONModel, JSONAutoField, JSONCharField, JSONTextField
+from voto_studio_backend.media.models import Image
+
 
 CATEGORIES = (
     ('1', _('Economy')),
@@ -329,5 +333,28 @@ class Controversy(TrackedWorkshopModel):
         'user__email',
     )
 
+    search_method_fields = (
+        'individuals',
+    )
+
     class Meta:
         verbose_name_plural = 'Controversies'
+
+    def get_individuals(self):
+        individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
+
+        response = []
+        for individual in individuals:
+            order = individual.order
+            if len(order['images']):
+                primary_image_url = get_object_or_404(Image, id=order['images'][0]).image.url
+            else:
+                primary_image_url = None
+
+            response.append({
+                'id': individual.id,
+                'name': individual.name,
+                'primary_image_url': primary_image_url,
+            })
+
+        return response

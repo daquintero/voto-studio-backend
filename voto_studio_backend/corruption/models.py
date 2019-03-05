@@ -127,3 +127,7 @@ class FinancialItem(TrackedWorkshopModel):
         'brief_description',
         'user__email',
     )
+
+    search_method_fields = (
+        'table_values',
+    )
