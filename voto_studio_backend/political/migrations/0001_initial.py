@@ -158,7 +158,7 @@ class Migration(migrations.Migration):
                 ('location_id', models.CharField(blank=True, max_length=32, null=True, verbose_name='Location Identifier')),
                 ('rels_dict', django.contrib.postgres.fields.jsonb.JSONField(blank=True, default=dict, verbose_name='Relationships Dictionary')),
                 ('order', django.contrib.postgres.fields.jsonb.JSONField(blank=True, default=voto_studio_backend.changes.models.get_order_default, verbose_name='Media Content Order')),
-                ('name', models.CharField(default=str, max_length=2048, verbose_name='Name')),
+                ('name', models.CharField(default=str, max_length=2048, unique=True, verbose_name='Name')),
                 ('brief_description', models.CharField(blank=True, max_length=140, null=True, verbose_name='Description')),
                 ('long_description', models.TextField(blank=True, default='<p></p>', verbose_name='Long Description')),
                 ('email', models.CharField(default=str, max_length=64, verbose_name='Email Address')),
