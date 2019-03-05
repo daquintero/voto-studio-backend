@@ -152,7 +152,7 @@ def create_orgs(data, user):
                 type=2,
             )
         except:
-            pass
+            new = False
 
         if not new:
             base_org = Change.objects.stage_created(org, request)
