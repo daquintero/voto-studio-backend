@@ -281,6 +281,10 @@ class Promise(TrackedWorkshopModel):
         'user__email',
     )
 
+    search_method_fields = (
+        'individuals',
+    )
+
 
 class Achievement(TrackedWorkshopModel):
     title = models.CharField(_('Title'), max_length=2048, default=str)
@@ -305,6 +309,10 @@ class Achievement(TrackedWorkshopModel):
         'brief_description',
         'type',
         'user__email',
+    )
+
+    search_method_fields = (
+        'individuals',
     )
 
 
