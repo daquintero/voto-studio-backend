@@ -13,4 +13,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('full_reset', bypass=True, user=options.get('user'))
         time.sleep(10)
-        call_command('bulk_indexing', 'default', bypass=True)
+        call_command('bulk_indexing', 'main_site', bypass=True)

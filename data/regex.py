@@ -248,14 +248,12 @@ def parse_data(data, user):
         try:
             for index, law_dict in enumerate(laws_regex(row['Leyes'])):
                 print(f'Migrating law {index}...')
-                law = Law.objects.create(
-                    brief_description=law_dict['law_description'],
-                    code=law_dict['law_number'],
-                    user=user,
-                    location_id_name='CIRCUITO',
-                    location_id=row['Circuito'],
-                    category=17,
-                )
+                law, new = Law.objects.get_or_create(code=law_dict['law_number'], tracked=True)
+                law.brief_description = law_dict['law_description']
+                law.user = user
+                law.category = 17,
+                law.save(to_index=False)
+
                 base_law_instance = Change.objects.stage_created(law, request)
                 laws.append(base_law_instance)
         except TypeError:
