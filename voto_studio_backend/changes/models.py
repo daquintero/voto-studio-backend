@@ -270,9 +270,10 @@ class Change(models.Model):
             instance.id = self.base_id
             instance.tracked = True
 
-            # Remove all ForeignKeys
+            # Remove all ForeignKeys apart from User
             fk_fields = [field for field in instance._meta.get_fields()
-                         if field.get_internal_type() == 'ForeignKey']
+                         if (field.get_internal_type() == 'ForeignKey' and not
+                             field.name == settings.AUTH_USER_MODEL)]
             for fk_field in fk_fields:
                 setattr(instance, f'{fk_field.name}_id', None)
             instance.save(using=MAIN_SITE_DB)
