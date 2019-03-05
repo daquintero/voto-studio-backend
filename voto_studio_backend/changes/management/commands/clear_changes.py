@@ -11,7 +11,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         user = options.get('user')
-        user = get_user_model().objects.get(email=user)
 
         filter_kwargs = {}
         if not user == 'all':
