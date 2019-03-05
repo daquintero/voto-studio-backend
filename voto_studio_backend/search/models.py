@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.db import models
+from django.http import Http404
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Search, Q
-from .utils import get_fields
+
 from .indexing import build_index_name, get_document_class
+from .utils import get_fields
 
 
 def _get_search_type(terms):
@@ -72,8 +74,12 @@ class IndexingMixin:
 
         if hasattr(self, 'search_method_fields'):
             for method_field_name in self.search_method_fields:
+                try:
+                    method_field_value = getattr(self, f'get_{method_field_name}')()
+                except Http404:
+                    method_field_value = None
                 ret.update({
-                    method_field_name: getattr(self, f'get_{method_field_name}')()
+                    method_field_name: method_field_value,
                 })
 
         return ret
