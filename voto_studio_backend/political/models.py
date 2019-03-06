@@ -392,7 +392,6 @@ class Controversy(TrackedWorkshopModel):
         response = []
         for individual in individuals:
             order = individual.order
-            print(order)
             if len(order['images']):
                 primary_image_url = get_object_or_404(Image, id=order['images'][0]).image.url
             else:

@@ -370,8 +370,8 @@ def _get_single_dict(field):
         return {
             RELATIONSHIPS: [],
             REFERENCES: [],
-            'model_label': model_label,
-            'type': field_type,
+            # 'model_label': model_label,
+            # 'type': field_type,
         }
 
 

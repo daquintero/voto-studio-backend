@@ -1,3 +1,4 @@
+import copy
 import math
 import pandas as pd
 import re
@@ -296,6 +297,8 @@ FIELD_MODEL_MAP = {
     'corruption_cases': 'political.CorruptionCase',
     'controversies': 'political.Controversy',
     'informative_snippets': 'corruption.InformativeSnippet',
+    'promises': 'political.Promise',
+    'achievements': 'political.Achievements',
     'images': 'media.Image',
     'videos': 'media.Video',
     'resources': 'media.Resource',
@@ -306,26 +309,31 @@ class UpdateError(Exception):
     pass
 
 
-def update_rels_dict(model_class):
+def update_rels_dict(model_class, using=settings.STUDIO_DB):
     user = User.objects.get(email='migration@bot.com')
     request = RequestFactory()
     request.user = user
-    instances = model_class.objects.filter(tracked=True)
+    instances = model_class.objects.using(using).filter(tracked=True)
     if not instances.count():
         raise UpdateError(f"No '{model_class._meta.label}' instances")
     for index, instance in enumerate(instances):
         if not index % math.ceil(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
-        rels_dict = instance.rels_dict
+        rels_dict = copy.deepcopy(instance.rels_dict)
         for key in list(rels_dict.keys()):
             if not FIELD_MODEL_MAP[key].startswith('media'):
-                rels_dict[key].update({'model_label': FIELD_MODEL_MAP[key]})
+                rels_dict[key].update({
+                    'model_label': FIELD_MODEL_MAP[key],
+                    'type': instance._meta.get_field(key).get_internal_type(),
+                })
             else:
                 rels_dict.pop(key)
 
-        instance.rels_dict = rels_dict
-        instance.save(using=settings.STUDIO_DB)
-        Change.objects.stage_updated(instance, request)
+        if not instance.rels_dict == rels_dict:
+            print('Updating rels_dict on ', instance)
+            instance.rels_dict = rels_dict
+            instance.save(using=settings.STUDIO_DB)
+            Change.objects.stage_updated(instance, request)
     print('100%')
 
 
