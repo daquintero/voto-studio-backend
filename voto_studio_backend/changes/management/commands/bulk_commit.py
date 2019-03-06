@@ -2,6 +2,7 @@ import math
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.http import Http404
 
 from voto_studio_backend.changes.models import Change
 
@@ -38,7 +39,10 @@ class Command(BaseCommand):
             for index, change in enumerate(changes):
                 if not index % math.ceil(change_count / 10):
                     print(f'{round(index / change_count * 100)}%')
-                change.commit()
+                try:
+                    change.commit()
+                except:
+                    print('Skipped', change)
             self.stdout.write(f'Committed {changes.count()} instances.')
         else:
             self.stdout.write('Cancelled.')
