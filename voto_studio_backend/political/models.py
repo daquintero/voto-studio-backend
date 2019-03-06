@@ -285,6 +285,25 @@ class Promise(TrackedWorkshopModel):
         'individuals',
     )
 
+    def get_individuals(self):
+        individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
+
+        response = []
+        for individual in individuals:
+            order = individual.order
+            if len(order['images']):
+                primary_image_url = get_object_or_404(Image, id=order['images'][0]).image.url
+            else:
+                primary_image_url = None
+
+            response.append({
+                'id': individual.id,
+                'name': individual.name,
+                'primary_image_url': primary_image_url,
+            })
+
+        return response
+
 
 class Achievement(TrackedWorkshopModel):
     title = models.CharField(_('Title'), max_length=2048, default=str)
@@ -314,6 +333,25 @@ class Achievement(TrackedWorkshopModel):
     search_method_fields = (
         'individuals',
     )
+
+    def get_individuals(self):
+        individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
+
+        response = []
+        for individual in individuals:
+            order = individual.order
+            if len(order['images']):
+                primary_image_url = get_object_or_404(Image, id=order['images'][0]).image.url
+            else:
+                primary_image_url = None
+
+            response.append({
+                'id': individual.id,
+                'name': individual.name,
+                'primary_image_url': primary_image_url,
+            })
+
+        return response
 
 
 class Controversy(TrackedWorkshopModel):
@@ -354,6 +392,7 @@ class Controversy(TrackedWorkshopModel):
         response = []
         for individual in individuals:
             order = individual.order
+            print(order)
             if len(order['images']):
                 primary_image_url = get_object_or_404(Image, id=order['images'][0]).image.url
             else:
