@@ -298,7 +298,7 @@ FIELD_MODEL_MAP = {
     'controversies': 'political.Controversy',
     'informative_snippets': 'corruption.InformativeSnippet',
     'promises': 'political.Promise',
-    'achievements': 'political.Achievements',
+    'achievements': 'political.Achievement',
     'images': 'media.Image',
     'videos': 'media.Video',
     'resources': 'media.Resource',
