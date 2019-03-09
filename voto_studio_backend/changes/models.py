@@ -1,6 +1,5 @@
 import uuid
 
-from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -10,14 +9,16 @@ from django.db.models import Q, OneToOneRel
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+
 from shared.utils import hidden_fields
 from voto_studio_backend.forms.models import InfoMixin, JSONModel, JSONAutoField, JSONCharField
-from voto_studio_backend.search.models import IndexingManager, IndexingMixin
 from voto_studio_backend.permissions.models import PermissionsBaseModel
+from voto_studio_backend.search.models import IndexingManager, IndexingMixin
 
 
 STUDIO_DB = settings.STUDIO_DB
 MAIN_SITE_DB = settings.MAIN_SITE_DB
+HISTORY_DB = settings.HISTORY_DB
 
 
 STAGE_CREATED = 'created'
@@ -26,9 +27,9 @@ STAGE_DELETED = 'deleted'
 
 
 STAGE_OPTIONS = (
-    ('created', 'created'),
-    ('updated', 'updated'),
-    ('deleted', 'deleted'),
+    (STAGE_CREATED, STAGE_CREATED),
+    (STAGE_UPDATED, STAGE_UPDATED),
+    (STAGE_DELETED, STAGE_DELETED),
 )
 
 
@@ -66,10 +67,7 @@ class ChangeManager(models.Manager):
                 setattr(instance, field.name, f'{getattr(instance, field.name)}-{uuid.uuid4()}')
         for field in self._get_one_to_one_fields(instance):
             setattr(instance, f'{field.name}_id', None)
-        if isinstance(instance, TrackedWorkshopModel):
-            instance.save(using=STUDIO_DB, to_index=False)
-        else:
-            instance.save(using=STUDIO_DB)
+        instance.save(using=STUDIO_DB)
         base_instance = get_object_or_404(instance._meta.model, id=base_instance_id)
 
         return base_instance, instance
@@ -161,29 +159,34 @@ class ChangeManager(models.Manager):
 
         return base_instances
 
-    def get_for_model(self, model, request=None, committed=False):
+    def get_for_model(self, model, request=None, committed=False, using=STUDIO_DB):
         """
         Get a collection of either all committed or all non-committed
         changes for a particular model, ordered by date with earliest first.
         """
         content_type = _get_content_type(model=model)
         user = getattr(request, 'user', None)
-        changes = Change.objects.filter(content_type=content_type, user=user, committed=committed)
+        changes = Change.objects \
+            .using(using) \
+            .filter(content_type=content_type, user=user, committed=committed)
 
         return changes
 
-    def get_for_instance(self, instance, committed=False):
+    def get_for_instance(self, instance, committed=False, using=STUDIO_DB):
         """
         Get a collection of either all committed or all non-committed
         changes for an instance, ordered by date with earliest first.
         """
         content_type = _get_content_type(instance=instance)
-        changes = Change.objects.filter(content_type=content_type, base_id=instance.id, committed=committed)
-
+        print('ct', content_type)
+        changes = Change.objects \
+            .using(using) \
+            .filter(content_type=content_type, base_id=instance.id, committed=committed)
+        print(changes)
         return changes
 
-    def commit_for_instance(self, instance):
-        changes = self.get_for_instance(instance)
+    def commit_for_instance(self, instance, using=STUDIO_DB):
+        changes = self.get_for_instance(instance, using=using)
         return [change.commit() for change in changes.order_by('date_created')]
 
 
@@ -239,7 +242,7 @@ class Change(models.Model):
         Could this implementation be made simpler with self.content_object?
         """
         instance_id = self.base_id if base else self.object_id
-
+        print(self, base, using, instance_id)
         return get_object_or_404(self.content_type.model_class().objects.using(using), id=instance_id)
 
     def _parse_json_fields(self, instance):
@@ -259,12 +262,21 @@ class Change(models.Model):
 
         return instance
 
+    def save(self, **kwargs):
+        print(self.content_type)
+        super().save(**kwargs)
+
     def commit(self):
         """
         Commit a change instance and propagate changes through to the frontend database. Will
         create a new instance or update/delete an existing one.
         """
         if self.stage_type == STAGE_CREATED or self.stage_type == STAGE_UPDATED:
+            base_instance = self._get_instance(using=STUDIO_DB, base=True)
+            base_instance.published = True
+            base_instance.date_last_published = timezone.now()
+            base_instance.save(using=STUDIO_DB)
+
             instance = self._get_instance(using=STUDIO_DB, base=False)
             instance = self._parse_json_fields(instance)
             instance.id = self.base_id
@@ -279,11 +291,13 @@ class Change(models.Model):
             instance.save(using=MAIN_SITE_DB)
 
         if self.stage_type == STAGE_DELETED:
-            instance = self._get_instance(using=STUDIO_DB)
-            instance.delete(fake=False, using=STUDIO_DB)
-
-            instance = self._get_instance(using=MAIN_SITE_DB)
-            instance.delete(fake=False, using=MAIN_SITE_DB)
+            # Do nothing as this action can't
+            # be "committed". By deleting an
+            # instance it is deleted from all
+            # databases and its ElasticSearch
+            # index is deleted. Therefore there
+            # is no further action to take.
+            pass
 
         self.committed = True
         self.date_committed = timezone.now()
@@ -303,6 +317,8 @@ class TrackedModel(PermissionsBaseModel):
     """
     date_created = models.DateTimeField(_('Date of Creation'), default=timezone.now)
     tracked = models.BooleanField(_('Tracked'), default=True)
+    published = models.BooleanField(_('Published'), default=False)
+    date_last_published = models.DateTimeField(_('Date of Last Publish'), blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
 
     objects = models.Manager()

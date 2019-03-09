@@ -3,6 +3,7 @@ import json
 from django.apps import apps
 from django.conf import settings
 from django.contrib.postgres.search import SearchVector
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, ManyToManyRel
 from django.shortcuts import get_object_or_404
@@ -10,13 +11,14 @@ from rest_framework import authentication, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+from . import serializers
 from shared.api.parsers import camel_to_underscore, underscore_to_camel
 from shared.utils import get_model, create_slice
-from . import serializers
 from voto_studio_backend.changes.models import Change, get_rels_dict_default
 from voto_studio_backend.media.models import Image, Video, Resource
 from voto_studio_backend.media.serializers import ImageSerializer, VideoSerializer, ResourceSerializer
-from voto_studio_backend.permissions.shortcuts import get_object_or_403, permission_denied_message
+from voto_studio_backend.permissions.shortcuts import get_object_or_403, get_list_or_403, permission_denied_message
 from voto_studio_backend.spatial.models import DataSet
 
 
@@ -176,8 +178,8 @@ def get_options(instance, field, using=settings.STUDIO_DB):
     model_class = field.model
     related_model_class = field.related_model
 
-    if field.choices:
-        ret = {'options': [{'label': b, 'value': a} for a, b in field.choices]}
+    if len(field.choices):
+        ret = {'options': [{'label': label, 'value': value} for value, label in field.choices]}
         ret['options'].insert(0, {'label': 'None', 'value': ''})
 
         return ret
@@ -312,6 +314,22 @@ def get_meta(model_class):
     return ret
 
 
+def get_user_options(user):
+    user_options = [
+        {'label': 'Your Content', 'value': 'yours'},
+        # {'label': 'Shared With You', 'value': 'shared'}
+    ]
+    if user.is_researcher:
+        user_options = [
+            *user_options,
+            {'label': 'All Content', 'value': 'all'},
+            {'label': 'Migrated Content', 'value': 'migrated'},
+            # {'label': 'For Review', 'value': 'review'},
+        ]
+
+    return user_options
+
+
 class BuildFormAPI(APIView):
     """
     Class providing API endpoints for the creation of the workshop forms.
@@ -367,14 +385,18 @@ class BuildFormAPI(APIView):
         if instance:
             for field in basic_fields:
                 field_value = getattr(instance, field.name)
-                if not (field.get_internal_type() == 'ForeignKey' or field.get_internal_type() == 'OneToOneField'):
-                    if not field.choices:
+                if not (field.get_internal_type() == 'ForeignKey' or
+                        field.get_internal_type() == 'OneToOneField'):
+                    if not len(field.choices):
+                        if field.name == 'category':
+                            print(field_value)
                         default_values[field.name] = field_value
                     else:
                         default_values[field.name] = {
                             'label': getattr(instance, f'get_{field.name}_display')(),
                             'value': field_value,
                         }
+                        print(getattr(instance, f'get_{field.name}_display')())
                 else:
                     if field_value:
                         default_values[field.name] = {
@@ -415,6 +437,7 @@ class BuildFormAPI(APIView):
             'related_fields': related_fields_list,
             'default_values': default_values,
             'location_id_name': instance.location_id_name if instance else 'Select Data Set',
+            'user_options': get_user_options(request.user),
         }
 
         return Response(response, status=status.HTTP_200_OK)
@@ -483,6 +506,7 @@ class UpdateBasicFieldsAPI(APIView):
             'id': base_instance.id,
             'created': new,
             'updated': True,
+            'instance': serializers.GeneralSerializer(base_instance, model_class=model_class).data,
             **get_meta(model_class),
         }
 
@@ -685,19 +709,22 @@ class PublishInstancesAPI(APIView):
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
         model_label = request.data['model_label']
-        instance_ids = request.data['instance_ids']
+        instance_ids = request.data['ids']
 
         model_class = get_model(model_label=model_label)
         instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_ids[0])
-
+        print(instance)
         committed_changes = Change.objects.commit_for_instance(instance)
-
+        print(committed_changes)
         if not len(committed_changes):
-            raise PublishError({
-                'message': 'No changes have been made since the last publish.'
-            })
+            committed_change = Change.objects \
+                .get_for_instance(instance, committed=True) \
+                .last() \
+                .commit()
+            committed_changes = [committed_change]
 
         response = {
+            'ids': instance_ids,
             'changes_committed': [c.id for c in committed_changes],
         }
 
@@ -720,126 +747,17 @@ class DeleteInstancesAPI(APIView):
         instance_ids = request.data['ids']
         model_class = get_model(model_label=model_label)
 
-        for instance_id in instance_ids:
-            instance = get_object_or_403(model_class, (request.user, 'write'), id=instance_id)
-            instance.delete(fake=False)
-            Change.objects.stage_deleted(instance, request)
+        instances = get_list_or_403(model_class, (request.user, 'write'), id__in=instance_ids)
+        for instance in instances:
+            base_instance = Change.objects.stage_deleted(instance, request)
+            base_instance.delete(using=settings.STUDIO_DB, fake=False)
 
-            instance = get_object_or_403(
-                model_class.objects.using(settings.MAIN_SITE_DB),
-                (request.user, 'write'),
-                id=instance_id,
-            )
-            instance.delete(fake=False)
+            if instance.published:
+                instance.delete(using=settings.MAIN_SITE_DB, fake=False)
 
         response = {
             'ids': instance_ids,
             'model_label': model_label,
-        }
-
-        return Response(response, status=status.HTTP_200_OK)
-
-
-class InstanceListAPI(APIView):
-    """
-    Class providing API endpoints used to list instances.
-    """
-    @staticmethod
-    def get(request):
-        if not request.user.is_authenticated:
-            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
-
-        model_label = request.GET.get('ml')
-        model_class = get_model(model_label=model_label)
-
-        must_not = []
-
-        instance_id = request.GET.get('id')
-        field_name = request.GET.get('fn')
-        if not instance_id == 'null' and instance_id is not None:
-            model_class = get_model(model_label=model_label)
-            instance = get_object_or_404(model_class, id=instance_id)
-            related_instances = get_field_value(instance, field_name=field_name).all()
-            must_not = [instance.id for instance in related_instances]
-
-        instances = model_class.objects \
-            .filter(tracked=True) \
-            .exclude(id__in=must_not) \
-            .order_by('-id')
-
-        search = request.GET.get('search', None)
-        if search not in (None, ''):
-            instances = instances \
-                .annotate(search=SearchVector(*model_class.search_fields)) \
-                .filter(search=search)
-
-        page = request.GET.get('page', 0)
-        size = request.GET.get('size', 10)
-        from_, to = create_slice(page, size)
-        instances = instances[from_:to]
-
-        response = {
-            'count': model_class.objects.filter(tracked=True).count(),
-            'list': {
-                'instances': serializers.GeneralSerializer(instances, model_class=model_class, many=True).data,
-                'table_heads': model_class.get_table_heads(model_class, verbose=True),
-                'model_label': model_label,
-                'model_name': model_class._meta.model_name,
-                'verbose_name': model_class._meta.verbose_name,
-            }
-        }
-
-        return Response(response, status=status.HTTP_200_OK)
-
-
-class RelatedInstanceListAPI(APIView):
-    """
-    Class providing API endpoints used to list instances.
-    """
-    @staticmethod
-    def get(request):
-        if not request.user.is_authenticated:
-            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
-
-        related_model_label = request.GET.get('rml')
-        related_model_class = get_model(model_label=related_model_label)
-
-        must_not = []
-
-        instance_id = request.GET.get('id')
-        model_label = request.GET.get('ml')
-        field_name = request.GET.get('fn')
-        if not instance_id == 'null' and instance_id is not None:
-            model_class = get_model(model_label=model_label)
-            instance = get_object_or_404(model_class, id=instance_id)
-            related_instances = get_field_value(instance, field_name=field_name).all()
-            must_not = [instance.id for instance in related_instances]
-
-        instances = related_model_class.objects \
-            .filter(tracked=True) \
-            .exclude(id__in=must_not) \
-            .order_by('-id')
-
-        search = request.GET.get('search', None)
-        if search not in (None, ''):
-            instances = instances \
-                .annotate(search=SearchVector(*related_model_class.search_fields)) \
-                .filter(search=search)
-
-        page = request.GET.get('page', 0)
-        size = request.GET.get('size', 10)
-        from_, to = create_slice(page, size)
-        instances = instances[from_:to]
-
-        response = {
-            'count': related_model_class.objects.filter(tracked=True).count(),
-            'list': {
-                'instances': serializers.GeneralSerializer(instances, model_class=related_model_class, many=True).data,
-                'table_heads': related_model_class.get_table_heads(related_model_class, verbose=True),
-                'model_label': related_model_label,
-                'model_name': related_model_class._meta.model_name,
-                'verbose_name': related_model_class._meta.verbose_name,
-            }
         }
 
         return Response(response, status=status.HTTP_200_OK)
@@ -854,11 +772,11 @@ class InstanceFinderAPI(APIView):
         if not request.user.is_authenticated:
             return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
 
-        ret = []
-        options = []
+        items = []
+        item_options = []
         for model_label in WORKSHOP_MODELS:
             model_class = get_model(model_label=model_label)
-            ret.append({
+            items.append({
                 'model_label': model_label,
                 'app_label': model_class._meta.app_label,
                 'model_name': model_class._meta.model_name,
@@ -866,16 +784,156 @@ class InstanceFinderAPI(APIView):
                 'verbose_name_plural': model_class._meta.verbose_name_plural,
                 'verbose_name_plural_title': model_class._meta.verbose_name_plural.title(),
             })
-            options.append({
+            item_options.append({
                 'label': model_class._meta.verbose_name.title(),
                 'value': model_label,
             })
 
+        user_options = get_user_options(request.user)
         response = {
             'finder': {
-                'items': ret,
-                'options': options,
+                'items': items,
+                'filter': {
+                    'item_options': item_options,
+                    'current_item_option': item_options[0],
+                    'user_options': user_options,
+                    'current_user_option': user_options[0],
+                },
             },
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+def get_user_filter(user, user_filter_term):
+    user_filter = {'user': user}
+    if user_filter_term == 'yours':
+        pass
+    if user_filter_term == 'all':
+        if user.is_researcher:
+            user_filter = {}
+    elif user_filter_term == 'shared':
+        ...
+    elif user_filter_term == 'migrated':
+        if user.is_researcher:
+            user_filter = {'user': get_object_or_404(get_user_model(), email='migration@bot.com')}
+    elif user_filter_term == 'review':
+        ...
+
+    return user_filter
+
+
+class InstanceListAPI(APIView):
+    """
+    Class providing API endpoints used to list instances.
+    """
+    @staticmethod
+    def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
+        user_filter_term = request.GET.get('filter')
+        user_filter = get_user_filter(request.user, user_filter_term)
+
+        model_label = request.GET.get('ml')
+        if model_label == 'all':
+            return Response(status=status.HTTP_200_OK)
+        else:
+            model_class = get_model(model_label=model_label)
+
+            must_not = []
+
+            instance_id = request.GET.get('id')
+            field_name = request.GET.get('fn')
+            if not instance_id == 'null' and instance_id is not None:
+                model_class = get_model(model_label=model_label)
+                instance = get_object_or_404(model_class, id=instance_id)
+                related_instances = get_field_value(instance, field_name=field_name).all()
+                must_not = [instance.id for instance in related_instances]
+
+            instances = model_class.objects \
+                .filter(tracked=True, **user_filter) \
+                .exclude(id__in=must_not) \
+                .order_by('-id')
+
+            search = request.GET.get('search', None)
+            if search not in (None, ''):
+                instances = instances \
+                    .annotate(search=SearchVector(*model_class.search_fields)) \
+                    .filter(search=search)
+
+            count = instances.count()
+            page = request.GET.get('page', 0)
+            size = request.GET.get('size', 10)
+            from_, to = create_slice(page, size)
+            instances = instances[from_:to]
+
+            response = {
+                'count': count,
+                'list': {
+                    'instances': serializers.GeneralSerializer(instances, model_class=model_class, many=True).data,
+                    'table_heads': model_class.get_table_heads(model_class, verbose=True),
+                    'model_label': model_label,
+                    'model_name': model_class._meta.model_name,
+                    'verbose_name': model_class._meta.verbose_name,
+                }
+            }
+
+            return Response(response, status=status.HTTP_200_OK)
+
+
+class RelatedInstanceListAPI(APIView):
+    """
+    Class providing API endpoints used to list instances.
+    """
+    @staticmethod
+    def get(request):
+        if not request.user.is_authenticated:
+            return Response('User not authenticated', status=status.HTTP_401_UNAUTHORIZED)
+
+        related_model_label = request.GET.get('rml')
+        related_model_class = get_model(model_label=related_model_label)
+
+        user_filter_term = request.GET.get('filter')
+        user_filter = get_user_filter(request.user, user_filter_term)
+
+        must_not = []
+
+        instance_id = request.GET.get('id')
+        model_label = request.GET.get('ml')
+        field_name = request.GET.get('fn')
+        if not instance_id == 'null' and instance_id is not None:
+            model_class = get_model(model_label=model_label)
+            instance = get_object_or_404(model_class, id=instance_id)
+            related_instances = get_field_value(instance, field_name=field_name).all()
+            must_not = [instance.id for instance in related_instances]
+
+        instances = related_model_class.objects \
+            .filter(tracked=True, **user_filter) \
+            .exclude(id__in=must_not) \
+            .order_by('-id')
+
+        search = request.GET.get('search', None)
+        if search not in (None, ''):
+            instances = instances \
+                .annotate(search=SearchVector(*related_model_class.search_fields)) \
+                .filter(search=search)
+
+        count = instances.count()
+        page = request.GET.get('page', 0)
+        size = request.GET.get('size', 10)
+        from_, to = create_slice(page, size)
+        instances = instances[from_:to]
+
+        response = {
+            'count': count,
+            'list': {
+                'instances': serializers.GeneralSerializer(instances, model_class=related_model_class, many=True).data,
+                'table_heads': related_model_class.get_table_heads(related_model_class, verbose=True),
+                'model_label': related_model_label,
+                'model_name': related_model_class._meta.model_name,
+                'verbose_name': related_model_class._meta.verbose_name,
+            }
         }
 
         return Response(response, status=status.HTTP_200_OK)

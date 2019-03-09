@@ -213,6 +213,7 @@ MANAGERS = ADMINS
 
 # ------------------------------------------------------------------------------
 STUDIO_DB = 'default'
+HISTORY_DB = 'history'
 MAIN_SITE_DB = 'main_site'
 SPATIAL_DB = 'spatial'
 
@@ -241,6 +242,7 @@ WORKSHOP_MODELS = (
     'corruption.FinancialItem',
     'political.Law',
     'political.Individual',
+    'political.Campaign',
     'political.Organization',
     'political.Promise',
     'political.Achievement',
@@ -256,6 +258,8 @@ BASE_HIDDEN_FIELDS = (
     'permitted_users',
     'permissions_dict',
     'rels_dict',
+    'published',
+    'date_last_published',
 )
 
 MODELS_TO_INDEX = ()

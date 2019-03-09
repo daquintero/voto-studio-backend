@@ -151,8 +151,6 @@ class Individual(TrackedWorkshopModel):
         'name',
         'brief_description',
         'type',
-        'corruption_related_funds',
-        'non_corruption_related_funds',
     )
 
     detail_descriptors = {
@@ -190,6 +188,43 @@ class Individual(TrackedWorkshopModel):
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
+class Campaign(TrackedWorkshopModel):
+    related_name = 'campaigns'
+
+    type = models.CharField(_('Type'), choices=INDIVIDUAL_TYPES, max_length=128, blank=True, null=True)
+    brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
+    long_description = models.TextField(_('Long Description'), blank=True, default=settings.TEXT_FIELD_DEFAULT)
+    reelection = models.BooleanField(_('Running for Reelection'), default=False)
+
+    individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
+
+    table_descriptors = (
+        'type',
+        'brief_description',
+        'reelection'
+    )
+
+    detail_descriptors = {
+        'basic': (
+            'type'
+            'brief_description',
+            'long_description',
+            'reelection'
+        ),
+        'related': (),
+    }
+
+    search_fields = (
+        'type'
+        'brief_description',
+        'long_description',
+        'reelection'
+        'user__email',
+    )
+
+    hidden_fields = hidden_fields(fields_tuple=('source',))
+
+
 class Organization(TrackedWorkshopModel):
     related_name = 'organizations'
 
@@ -221,8 +256,6 @@ class Organization(TrackedWorkshopModel):
         'name',
         'brief_description',
         'type',
-        'corruption_related_funds',
-        'non_corruption_related_funds',
     )
 
     detail_descriptors = {

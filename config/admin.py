@@ -21,6 +21,10 @@ class MultiDBModelAdmin(admin.ModelAdmin):
         return super().formfield_for_manytomany(db_field, request, using=self.using, **kwargs)
 
 
+class HistoryAdmin(admin.AdminSite):
+    site_header = 'VotoInformado 2019 History Admin'
+
+
 class MainSiteAdmin(admin.AdminSite):
     site_header = 'VotoInformado 2019 Main Site Admin'
 
@@ -29,11 +33,13 @@ class SpatialAdmin(admin.AdminSite):
     site_header = 'VotoInformado 2019 Spatial Data Admin'
 
 
+history_admin = HistoryAdmin(name='history_admin')
 main_site_admin = MainSiteAdmin(name='main_site_admin')
 spatial_admin = SpatialAdmin(name='spatial_admin')
 
 
 ADMIN_SITES = {
+    'history': history_admin,
     'main_site': main_site_admin,
     'spatial': spatial_admin,
 }

@@ -291,6 +291,7 @@ def migrate(user='migration@bot.com'):
 FIELD_MODEL_MAP = {
     'financial_items': 'political.FinancialItem',
     'individuals': 'political.Individual',
+    'campaigns': 'political.Campaign',
     'organizations': 'political.Organization',
     'laws': 'political.Law',
     'electoral_periods': 'political.ElectoralPeriod',

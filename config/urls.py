@@ -3,11 +3,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 from django.views import defaults as default_views
-from config.admin import main_site_admin, spatial_admin
+from config.admin import history_admin, main_site_admin, spatial_admin
 
 urlpatterns = [
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
+    path('history_admin/', history_admin.urls),
     path('main_site_admin/', main_site_admin.urls),
     path('spatial_admin/', spatial_admin.urls),
     # User management

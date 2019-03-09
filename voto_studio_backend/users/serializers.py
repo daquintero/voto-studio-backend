@@ -24,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             'name',
             'password',
             'profile_picture_url',
+            'is_researcher',
         )
 
     def get_profile_picture_url(self, obj):

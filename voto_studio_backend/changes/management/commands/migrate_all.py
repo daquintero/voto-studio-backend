@@ -11,6 +11,9 @@ class Command(BaseCommand):
         self.stdout.write(f"Migrating {settings.STUDIO_DB} database...")
         call_command('migrate', database=settings.STUDIO_DB)
 
+        self.stdout.write(f"Migrating {settings.HISTORY_DB} database...")
+        call_command('migrate', database=settings.HISTORY_DB)
+
         self.stdout.write(f"Migrating {settings.MAIN_SITE_DB} database...")
         call_command('migrate', database=settings.MAIN_SITE_DB)
 
@@ -18,4 +21,4 @@ class Command(BaseCommand):
             self.stdout.write(f"Migrating {settings.SPATIAL_DB} database...")
             call_command('migrate', database=settings.SPATIAL_DB)
 
-        self.stdout.write('Successfully migrated databases.')
+        self.stdout.write('Successfully migrated both databases.')
