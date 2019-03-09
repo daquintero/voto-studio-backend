@@ -73,18 +73,6 @@ DATABASES = {
         },
         'ATOMIC_REQUESTS': True,
     },
-    'history': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'OPTIONS': {
-            'options': '-c search_path=history',
-        },
-        'NAME': env('DJANGO_DATABASE_NAME'),
-        'USER': env('DJANGO_DATABASE_USER'),
-        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
-        'HOST': '127.0.0.1',
-        'PORT': '5432',
-        'ATOMIC_REQUESTS': True,
-    },
     'main_site': {
         'ENGINE': 'django.db.backends.postgresql',
         'OPTIONS': {
