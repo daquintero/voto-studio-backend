@@ -28,3 +28,18 @@ def create_individual_loop():
         json.dump(ret, outfile)
 
     return ret
+
+
+def create_centroid_list():
+    geometries = models.DataSet.objects.using(settings.SPATIAL_DB).get(location_id_name='CIRCUITO').geometries
+
+    centroid_list = []
+    for geometry_instance in geometries.all():
+        centroid_list.append({
+            'coordinates': geometry_instance.geometry.centroid.coords,
+        })
+
+    with open('./voto_studio_backend/spatial/data/hex.json', 'w') as outfile:
+        json.dump(centroid_list, outfile)
+
+    return json.dumps(centroid_list)

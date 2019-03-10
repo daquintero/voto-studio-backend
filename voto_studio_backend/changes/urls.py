@@ -6,9 +6,6 @@ app_name = 'changes'
 base_v1 = 'api/v1'
 
 urlpatterns = [
-    # Get Endpoints
-    path(f'{base_v1}/list/', views.ChangeListAPI.as_view(), name='list_changes'),
-    # Creation endpoints
-    # Update endpoints
-    path(f'{base_v1}/commit/', views.CommitChangeAPI.as_view(), name='commit_changes'),
+    # GET Endpoints
+    path(f'{base_v1}/increment_view_count/', views.increment_view_count, name='increment_view_count'),
 ]

@@ -13,20 +13,24 @@ urlpatterns = [
     path('spatial_admin/', spatial_admin.urls),
     # User management
     path(
-        "users/",
-        include("voto_studio_backend.users.urls", namespace="users"),
+        'users/',
+        include('voto_studio_backend.users.urls', namespace='users'),
     ),
     path(
-        "permissions/",
-        include("voto_studio_backend.permissions.urls", namespace="permissions"),
+      'changes/',
+      include('voto_studio_backend.changes.urls', namespace='changes'),
     ),
     path(
-        "forms/",
-        include("voto_studio_backend.forms.urls", namespace="forms"),
+        'permissions/',
+        include('voto_studio_backend.permissions.urls', namespace='permissions'),
     ),
     path(
-        "media/",
-        include("voto_studio_backend.media.urls", namespace="media"),
+        'forms/',
+        include('voto_studio_backend.forms.urls', namespace='forms'),
+    ),
+    path(
+        'media/',
+        include('voto_studio_backend.media.urls', namespace='media'),
     ),
 ] + static(
     settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
@@ -37,23 +41,23 @@ if settings.DEBUG:
     # these url in browser to see how these error pages look like.
     urlpatterns += [
         path(
-            "400/",
+            '400/',
             default_views.bad_request,
-            kwargs={"exception": Exception("Bad Request")},
+            kwargs={'exception': Exception('Bad Request')},
         ),
         path(
-            "403/",
+            '403/',
             default_views.permission_denied,
-            kwargs={"exception": Exception("Permission Denied")},
+            kwargs={'exception': Exception('Permission Denied')},
         ),
         path(
-            "404/",
+            '404/',
             default_views.page_not_found,
-            kwargs={"exception": Exception("Page not Found")},
+            kwargs={'exception': Exception('Page not Found')},
         ),
-        path("500/", default_views.server_error),
+        path('500/', default_views.server_error),
     ]
-    if "debug_toolbar" in settings.INSTALLED_APPS:
+    if 'debug_toolbar' in settings.INSTALLED_APPS:
         import debug_toolbar
 
-        urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
+        urlpatterns = [path('__debug__/', include(debug_toolbar.urls))] + urlpatterns

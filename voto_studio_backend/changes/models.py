@@ -178,11 +178,10 @@ class ChangeManager(models.Manager):
         changes for an instance, ordered by date with earliest first.
         """
         content_type = _get_content_type(instance=instance)
-        print('ct', content_type)
         changes = Change.objects \
             .using(using) \
             .filter(content_type=content_type, base_id=instance.id, committed=committed)
-        print(changes)
+
         return changes
 
     def commit_for_instance(self, instance, using=STUDIO_DB):
@@ -242,10 +241,11 @@ class Change(models.Model):
         Could this implementation be made simpler with self.content_object?
         """
         instance_id = self.base_id if base else self.object_id
-        print(self, base, using, instance_id)
+
         return get_object_or_404(self.content_type.model_class().objects.using(using), id=instance_id)
 
-    def _parse_json_fields(self, instance):
+    @staticmethod
+    def _parse_json_fields(instance):
         fields = instance._meta.model._meta.get_fields()
         for field in fields:
             if field.name in ('statistics', 'experience'):
@@ -262,10 +262,6 @@ class Change(models.Model):
 
         return instance
 
-    def save(self, **kwargs):
-        print(self.content_type)
-        super().save(**kwargs)
-
     def commit(self):
         """
         Commit a change instance and propagate changes through to the frontend database. Will
@@ -278,7 +274,6 @@ class Change(models.Model):
             base_instance.save(using=STUDIO_DB)
 
             instance = self._get_instance(using=STUDIO_DB, base=False)
-            instance = self._parse_json_fields(instance)
             instance.id = self.base_id
             instance.tracked = True
 
@@ -440,6 +435,8 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
 
     location_id_name = models.CharField(_('Location Identifier Name'), max_length=32, null=True, blank=True)
     location_id = models.CharField(_('Location Identifier'), max_length=32, null=True, blank=True)
+
+    views = models.PositiveIntegerField(default=0)
 
     rels_dict = JSONField(_('Relationships Dictionary'), blank=True, default=dict)
 
