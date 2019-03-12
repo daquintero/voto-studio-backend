@@ -3,8 +3,8 @@ from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.shortcuts import get_object_or_404, get_list_or_404
 from django.utils.translation import ugettext_lazy as _
-from shared.utils import hidden_fields
 
+from shared.utils import hidden_fields
 from voto_studio_backend.changes.models import TrackedWorkshopModel
 from voto_studio_backend.forms.models import JSONModel, JSONAutoField, JSONCharField, JSONTextField
 from voto_studio_backend.media.models import Image

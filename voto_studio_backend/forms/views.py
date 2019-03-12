@@ -366,6 +366,13 @@ class BuildFormAPI(APIView):
             **get_options(instance, field, using=using),
         } for field in basic_fields]
 
+        # Add the location object that is a combination
+        # of the location_id_name and the location_id.
+        if 'location' not in model_class.hidden_fields:
+            basic_fields_list.append({
+                'name': 'location',
+            })
+
         related_fields = get_related_fields(model=model_class)
         related_fields_list = [{
             'name': field.name,
@@ -409,8 +416,15 @@ class BuildFormAPI(APIView):
                             'value': '',
                         }
 
-            if instance.location_id_name:
-                default_values[instance.location_id_name] = instance.location_id
+            if 'location' not in model_class.hidden_fields and instance.location_id_name:
+                default_values['location'] = {
+                    'location_id_name_option': {
+                        'value': instance.location_id_name,
+                        'label': instance.location_id_name.title(),
+                    },
+                    'location_id_name': instance.location_id_name,
+                    'location_id': instance.location_id,
+                }
 
             media_fields = get_media_fields(model=model_class)
             for field in media_fields:
@@ -425,6 +439,15 @@ class BuildFormAPI(APIView):
             for field in basic_fields:
                 if field.get_internal_type() == 'JSONField':
                     default_values[field.name] = field.get_default()
+
+            default_values['location'] = {
+                    'location_id_name_option': {
+                        'value': 'national',
+                        'label': 'National',
+                    },
+                    'location_id_name': 'national',
+                    'location_id': '',
+                }
 
         response = {
             'new': new,
@@ -490,6 +513,11 @@ class UpdateBasicFieldsAPI(APIView):
                         if related_instance:
                             instance.remove_fk(field, related_instance)
                             Change.objects.stage_updated(related_instance, request)
+
+        if 'location' not in model_class.hidden_fields:
+            location = values['location']
+            instance.location_id_name = location['location_id_name']
+            instance.location_id = location['location_id']
 
         try:
             instance.save(using=settings.STUDIO_DB)

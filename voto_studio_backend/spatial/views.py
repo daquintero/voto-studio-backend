@@ -43,3 +43,81 @@ def create_centroid_list():
         json.dump(centroid_list, outfile)
 
     return json.dumps(centroid_list)
+
+
+def recur(geometry):
+
+    return
+
+
+def create_circuitos():
+    geometries = models.DataSet.objects.using(settings.SPATIAL_DB).get(location_id_name='CIRCUITO').geometries
+
+    gid_list = []
+    for geometry in geometries.all():
+        properties = geometry.properties
+        gid_list.append(properties['CIRCUITO'])
+
+    print(len(gid_list))
+    gid_list = list(set(gid_list))
+
+    outer_json = {
+        'type': 'FeatureCollection',
+        'features': [],
+    }
+    geometry_collections = []
+    total_geoms = 0
+    for gid in gid_list:
+        geometries_in_gid = geometries.filter(properties__CIRCUITO=gid)
+        total_geoms += len(geometries_in_gid)
+
+        if (len(geometries_in_gid) > 1):
+            for geometry in geometries_in_gid:
+                geometry = geometry.geometry
+                new_geometry = new_geometry.union(geometry)
+
+            # print(json.loads(geometry_collection.geojson)['geometries'][0])
+
+            inner_json = {
+                'type': 'Feature',
+                'geometry': json.loads(geometry_collection.geojson)['geometries'][1],
+                'properties': {
+                    'CIRCUITO': gid,
+                },
+            }
+        else:
+            inner_json = {
+                'type': 'Feature',
+                'geometry': json.loads(geometries_in_gid[0].geojson)['geometry'],
+                'properties': {
+                    'CIRCUITO': gid
+                },
+            }
+
+        outer_json['features'].append(inner_json)
+
+    with open('./voto_studio_backend/spatial/data/circuito.json', 'w') as outfile:
+        json.dump(outer_json, outfile)
+
+    print(total_geoms)
+    return outer_json, geometry_collections, geometries_in_gid
+
+
+def test():
+    geometries = models.DataSet.objects.using(settings.SPATIAL_DB).get(location_id_name='CIRCUITO').geometries
+
+    geometry_collection = GeometryCollection(geometries)
+
+    outer_json = {
+        'type': 'FeatureCollection',
+        'features': [{
+            'type': 'Feature',
+            'geometry': json.loads(geometry_collection.geojson)['geometries'][0]['geometries'],
+            'properties': {
+                'CIRCUITO': gid
+            },
+        }],
+    }
+
+    with open('./voto_studio_backend/spatial/data/circuito.json', 'w') as outfile:
+        json.dump(outer_json, outfile)

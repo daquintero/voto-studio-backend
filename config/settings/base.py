@@ -67,6 +67,7 @@ LOCAL_APPS = [
     'voto_studio_backend.media',
     'voto_studio_backend.corruption',
     'voto_studio_backend.political',
+    'voto_studio_backend.voting',
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -237,9 +238,12 @@ REST_FRAMEWORK = {
 API_URL_V1 = 'api/v1'
 
 WORKSHOP_MODELS = (
+    # Corruption
     'corruption.InformativeSnippet',
     'corruption.CorruptionCase',
     'corruption.FinancialItem',
+
+    # Political
     'political.Law',
     'political.Individual',
     'political.Campaign',
@@ -247,6 +251,9 @@ WORKSHOP_MODELS = (
     'political.Promise',
     'political.Achievement',
     'political.Controversy',
+
+    # Tutorial
+    'voting.Tutorial',
 )
 
 BASE_HIDDEN_FIELDS = (
@@ -260,6 +267,9 @@ BASE_HIDDEN_FIELDS = (
     'rels_dict',
     'published',
     'date_last_published',
+    'location_id',
+    'location_id_name',
+    'views',
 )
 
 MODELS_TO_INDEX = ()

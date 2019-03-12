@@ -248,7 +248,7 @@ class Change(models.Model):
     def _parse_json_fields(instance):
         fields = instance._meta.model._meta.get_fields()
         for field in fields:
-            if field.name in ('statistics', 'experience'):
+            if field.name in ('statistics', 'experience', 'references'):
                 sub_instances = getattr(instance, field.name)['sub_instances']
                 parsed_field = []
                 if len(sub_instances):
@@ -448,7 +448,7 @@ class TrackedWorkshopModel(TrackedModel, InfoMixin, IndexingMixin):
     objects = TrackedWorkshopModelManager()
 
     read_only_fields = ('date_created', 'user',)
-    hidden_fields = hidden_fields(fields_tuple=('order',))
+    hidden_fields = hidden_fields(fields_tuple=('order', 'views', 'location_id_name', 'location_id',))
 
     class Meta:
         abstract = True
