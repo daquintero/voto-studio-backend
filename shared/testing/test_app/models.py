@@ -3,6 +3,8 @@ import string
 
 from django.db import models
 from django.utils import timezone
+
+from shared.utils import hidden_fields
 from voto_studio_backend.changes.models import TrackedWorkshopModelManager, TrackedWorkshopModel
 
 
@@ -57,8 +59,9 @@ class BasicModel(TrackedWorkshopModel):
 
     # This model has 10 basic fields, but it
     # inherits from ``TrackedWorkshopModel``
-    # which adds a further 5.
-    basic_field_count = 10 + 5
+    # which adds a further 3.
+    # TODO: Include hidden fields
+    basic_field_count = 10 + 3
 
     # This model has 1 related field, although
     # ``TrackedWorkshopModel`` adds 3 they are
@@ -74,3 +77,5 @@ class BasicModel(TrackedWorkshopModel):
         'basic': (),
         'related': (),
     }
+
+    hidden_fields = hidden_fields(fields_tuple=('order', 'views', 'location', 'location_id_name', 'location_id',))
