@@ -53,6 +53,7 @@ ORGANIZATION_TYPES = (
     ('1', _('Governmental')),
     ('2', _('Political Party')),
     ('3', _('Company')),
+    ('4', _('Organización Sin Fines de Lucro')),
 )
 
 ELECTORAL_PERIODS = (
