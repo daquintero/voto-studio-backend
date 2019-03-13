@@ -1,7 +1,7 @@
 import json
 
 from django.conf import settings
-from django.contrib.gis.geos import GeometryCollection
+from django.contrib.gis.geos import GEOSGeometry, GeometryCollection, MultiPolygon, Polygon
 from . import models
 from voto_studio_backend.political.models import Individual
 from voto_studio_backend.changes.models import Change
@@ -106,18 +106,76 @@ def create_circuitos():
 def test():
     geometries = models.DataSet.objects.using(settings.SPATIAL_DB).get(location_id_name='CIRCUITO').geometries
 
-    geometry_collection = GeometryCollection(geometries)
+    gid_list = []
+    for geometry in geometries.all():
+        properties = geometry.properties
+        gid_list.append(properties['CIRCUITO'])
+    gid_list = list(set(gid_list))
 
     outer_json = {
         'type': 'FeatureCollection',
-        'features': [{
-            'type': 'Feature',
-            'geometry': json.loads(geometry_collection.geojson)['geometries'][0]['geometries'],
-            'properties': {
-                'CIRCUITO': gid
-            },
-        }],
+        'features': [],
     }
+
+    geometry_unions = []
+    for index, gid in enumerate(gid_list):
+        try:
+            print(index)
+            geometries_in_gid = geometries.filter(properties__CIRCUITO=gid)
+            geometries_in_gid = [g.geometry for g in geometries_in_gid]
+            print(geometries_in_gid, gid)
+            geometry_union = geometries_in_gid[0]
+            geometries_in_gid = geometries_in_gid[1:]
+
+            for geometry in geometries_in_gid:
+                geometry_union = geometry_union.union(geometry)
+            geometry_unions.append(geometry_union)
+
+            inner_json = {
+                'type': 'Feature',
+                'geometry': json.loads(geometry_union.json),
+                'properties': {
+                    'CIRCUITO': gid,
+                },
+            }
+            outer_json['features'].append(inner_json)
+        except:
+            print('passing', geometries_in_gid, gid)
+
+    with open('./voto_studio_backend/spatial/data/circuito.json', 'w') as outfile:
+        json.dump(outer_json, outfile)
+
+
+def test2():
+    geometries = models.DataSet.objects.using(settings.SPATIAL_DB).get(location_id_name='CIRCUITO').geometries
+
+    gid_list = []
+    for geometry in geometries.all():
+        properties = geometry.properties
+        gid_list.append(properties['CIRCUITO'])
+    gid_list = list(set(gid_list))
+
+    outer_json = {
+        'type': 'FeatureCollection',
+        'features': [],
+    }
+
+    geometry_unions = []
+    for index, gid in enumerate(gid_list):
+        print(index)
+        geometries_in_gid = geometries.filter(properties__CIRCUITO=gid)
+        geometries_in_gid = [g.geometry for g in geometries_in_gid]
+
+        mp = MultiPolygon(tuple(MultiPolygon(g) for g in geometries_in_gid))
+
+        inner_json = {
+            'type': 'Feature',
+            'geometry': json.loads(mp.json),
+            'properties': {
+                'CIRCUITO': gid,
+            },
+        }
+        outer_json['features'].append(inner_json)
 
     with open('./voto_studio_backend/spatial/data/circuito.json', 'w') as outfile:
         json.dump(outer_json, outfile)

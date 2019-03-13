@@ -274,6 +274,7 @@ class Change(models.Model):
             base_instance.save(using=STUDIO_DB)
 
             instance = self._get_instance(using=STUDIO_DB, base=False)
+            instance = self._parse_json_fields(instance)
             instance.id = self.base_id
             instance.tracked = True
 

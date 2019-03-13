@@ -7,14 +7,17 @@ from django.contrib.postgres.fields import JSONField
 
 
 class GeometryCollectionManager(models.Manager):
-    def create_from_json(self, name=None, file=None):
+    def create_from_json(self, name=None, file=None, location_id_name=None):
         if file is None or not file.name.endswith(('.geojson', '.json')):
             raise ValueError('Provide a json or geojson file.')
 
         geometry_collection = self.model(
             name=name,
             geometry_collection=GEOSGeometryCollection(
-                tuple(g.geometry for g in Geometry.objects.create_from_json(file=file)))
+                tuple(GEOSGeometry(g.geometry) for g in Geometry.objects.create_from_json(
+                    file=file,
+                    location_id_name=location_id_name,
+                )))
         )
         geometry_collection.save(using=settings.SPATIAL_DB)
 
