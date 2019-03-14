@@ -197,11 +197,10 @@ class Individual(TrackedWorkshopModel):
 
         response = []
         for campaign in campaigns:
-            order = individual.order
 
             response.append({
-                'type': individual.id,
-                'reelection': primary_image_url,
+                'type': campaign.type,
+                'reelection': campaign.relection,
             })
 
         return response
