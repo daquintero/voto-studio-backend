@@ -200,7 +200,7 @@ class Individual(TrackedWorkshopModel):
 
             response.append({
                 'type': campaign.type,
-                'reelection': campaign.relection,
+                'reelection': campaign.reelection,
             })
 
         return response
