@@ -188,6 +188,24 @@ class Individual(TrackedWorkshopModel):
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
+    search_method_fields = (
+        'campaigns',
+    )
+
+    def get_campaigns(self):
+        campaigns = get_list_or_404(Campaign, id__in=self.rels_dict['campaigns']['rels'])
+
+        response = []
+        for campaign in campaigns:
+            order = individual.order
+
+            response.append({
+                'type': individual.id,
+                'reelection': primary_image_url,
+            })
+
+        return response
+
 
 class Campaign(TrackedWorkshopModel):
     related_name = 'campaigns'
