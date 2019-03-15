@@ -199,7 +199,7 @@ class Individual(TrackedWorkshopModel):
         for campaign in campaigns:
 
             response.append({
-                'type': campaign.type,
+                'type': campaign.get_type_display(),
                 'reelection': campaign.reelection,
             })
 
