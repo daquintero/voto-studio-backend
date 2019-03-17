@@ -1,7 +1,11 @@
 import json
+import random
 
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, GeometryCollection, MultiPolygon, Polygon
+from django.contrib.gis.db.models import Union
+from django.contrib.gis.db.models.functions import MakeValid
+
 from . import models
 from voto_studio_backend.political.models import Individual
 from voto_studio_backend.changes.models import Change
@@ -160,19 +164,18 @@ def test2():
         'features': [],
     }
 
-    geometry_unions = []
     for index, gid in enumerate(gid_list):
-        print(index)
-        geometries_in_gid = geometries.filter(properties__CIRCUITO=gid)
-        geometries_in_gid = [g.geometry for g in geometries_in_gid]
-
-        mp = MultiPolygon(tuple(MultiPolygon(g) for g in geometries_in_gid))
+        geometry = geometries \
+            .filter(properties__CIRCUITO=gid) \
+            .aggregate(Union(MakeValid('geometry')))
 
         inner_json = {
             'type': 'Feature',
-            'geometry': json.loads(mp.json),
+            'geometry': json.loads(geometry['MakeValid__union'].json),
             'properties': {
                 'CIRCUITO': gid,
+                'index': index,
+                'random': random.randint(0, 5)
             },
         }
         outer_json['features'].append(inner_json)

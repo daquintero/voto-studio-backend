@@ -264,15 +264,22 @@ class Change(models.Model):
 
     def commit(self):
         """
-        Commit a change instance and propagate changes through to the frontend database. Will
+        Commit a change instance and propagate changes through to the main_site database. Will
         create a new instance or update/delete an existing one.
         """
         if self.stage_type == STAGE_CREATED or self.stage_type == STAGE_UPDATED:
+            # Update some properties on the base instance. This is so
+            # we can display whether or not an instance is visible on
+            # the main in VotoStudio.
             base_instance = self._get_instance(using=STUDIO_DB, base=True)
-            base_instance.published = True
+            if not base_instance.published:
+                base_instance.published = True
             base_instance.date_last_published = timezone.now()
             base_instance.save(using=STUDIO_DB)
 
+            # Get the instance that we are going to copy over to the
+            # main site database. We need to parse the JSON fields
+            # into a format that is more friendly to the main site.
             instance = self._get_instance(using=STUDIO_DB, base=False)
             instance = self._parse_json_fields(instance)
             instance.id = self.base_id
