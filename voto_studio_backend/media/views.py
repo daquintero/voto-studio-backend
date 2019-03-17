@@ -126,6 +126,8 @@ class DeleteFilesAPI(APIView):
         ids = [int(_id) for _id in request.data.get('ids')]
         instances = model_class.objects.filter(id__in=ids)
         for instance in instances:
+            if not instance.user == request.user:
+                return Response('User does not have permission', status=status.HTTP_403_FORBIDDEN)
             instance.delete(reduce_order=True)
 
         response = {
