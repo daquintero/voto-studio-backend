@@ -106,9 +106,8 @@ class FinancialItem(TrackedWorkshopModel):
 
     table_descriptors = (
         'title',
-        'brief_description',
         'amount',
-        'corruption_related',
+        'source',
     )
 
     detail_descriptors = {
