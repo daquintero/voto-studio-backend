@@ -6,7 +6,9 @@ from django.utils.translation import ugettext_lazy as _
 
 from shared.utils import hidden_fields
 from voto_studio_backend.changes.models import TrackedWorkshopModel
-from voto_studio_backend.forms.models import JSONModel, JSONAutoField, JSONCharField, JSONTextField
+from voto_studio_backend.forms.models import (
+    JSONModel, JSONAutoField, JSONCharField, JSONTextField, JSONChoiceField,
+)
 from voto_studio_backend.media.models import Image
 
 
@@ -117,7 +119,7 @@ class Law(TrackedWorkshopModel):
 
 class Experience(JSONModel):
     id = JSONAutoField(unique=True)
-    type = JSONCharField(max_length=32)
+    type = JSONChoiceField(choices=CATEGORIES)
     title = JSONCharField(max_length=128)
     organization = JSONCharField(max_length=128)
     description = JSONTextField()

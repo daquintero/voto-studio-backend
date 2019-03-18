@@ -129,6 +129,14 @@ class JSONCharField(JSONBaseField):
         super().__init__(read_only=read_only)
 
 
+class JSONChoiceField(JSONBaseField):
+    type = 'select'
+
+    def __init__(self, read_only=False, choices=None):
+        self.choices = choices
+        super().__init__(read_only=read_only)
+
+
 class JSONTextField(JSONBaseField):
     type = 'textarea'
 
@@ -146,6 +154,18 @@ class JSONModel:
 
         return attrs
 
+    def _get_choices(self, field_class):
+        options = []
+        if hasattr(field_class, 'choices'):
+            for value, label in field_class.choices:
+                options.append({
+                    'label': label,
+                    'value': value,
+                })
+        return {
+            'options': options,
+        }
+
     @property
     def _json(self):
         json = {
@@ -155,12 +175,12 @@ class JSONModel:
             },
             'sub_instances': [],
         }
-        for attr in self._get_attrs():
-            field_name, field_class = attr
+        for field_name, field_class in self._get_attrs():
             json['schema']['fields'].append({
                 'name': field_name,
                 'type': field_class.type,
                 'read_only': field_class.read_only,
+                **self._get_choices(field_class),
             })
 
         return json
