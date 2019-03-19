@@ -15,11 +15,16 @@ class Command(BaseCommand):
                     f'Do you wish to continue? [y/N] ')
         confirm = ans.lower() == 'y'
 
+        if options.get('to_index') == 'True':
+            to_index = True
+        else:
+            to_index = False
+
         if confirm:
             add_new_fields_to_rels_dict(
                 model_class=get_model(model_label=model_label),
                 using=options.get('using'),
-                to_index=options.get('to_index'),
+                to_index=to_index,
             )
             self.stdout.write(f"Successfully updated rels_dict on {model_label}.")
         else:

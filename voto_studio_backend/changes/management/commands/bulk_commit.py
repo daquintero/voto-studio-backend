@@ -32,6 +32,11 @@ class Command(BaseCommand):
         if not committed == 'all':
             filter_kwargs.update({'committed': committed})
 
+        if options.get('to_index') == 'True':
+            to_index = True
+        else:
+            to_index = False
+
         if confirm:
             changes = Change.objects \
                 .filter(**filter_kwargs) \
@@ -41,7 +46,7 @@ class Command(BaseCommand):
                 if not index % math.ceil(change_count / 10):
                     print(f'{round(index / change_count * 100)}%')
                 try:
-                    change.commit(to_index=options.get('to_index', True))
+                    change.commit(to_index=to_index)
                 except:
                     print('Skipped', change)
             self.stdout.write(f'Committed {changes.count()} instances.')
