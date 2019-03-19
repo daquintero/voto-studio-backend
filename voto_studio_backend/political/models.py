@@ -191,7 +191,7 @@ class Individual(TrackedWorkshopModel):
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
     search_method_fields = (
-        'campaigns',
+        # 'campaigns',
     )
 
     def get_campaigns(self):
