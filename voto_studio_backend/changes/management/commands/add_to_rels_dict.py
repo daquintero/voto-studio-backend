@@ -7,6 +7,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--model_label', action='store', dest='model_label', help='Model label')
         parser.add_argument('--using', action='store', dest='using', help='The DB to act on')
+        parser.add_argument('--to_index', action='store', dest='to_index', help='Should ElasticSearch index this?')
 
     def handle(self, *args, **options):
         model_label = options.get('model_label')
@@ -15,7 +16,11 @@ class Command(BaseCommand):
         confirm = ans.lower() == 'y'
 
         if confirm:
-            add_new_fields_to_rels_dict(model_class=get_model(model_label=model_label), using=options.get('using'))
+            add_new_fields_to_rels_dict(
+                model_class=get_model(model_label=model_label),
+                using=options.get('using'),
+                to_index=options.get('to_index'),
+            )
             self.stdout.write(f"Successfully updated rels_dict on {model_label}.")
         else:
             self.stdout.write('Cancelled.')

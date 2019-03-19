@@ -415,7 +415,7 @@ class TrackedWorkshopModelManager(models.Manager):
     def create(self, **kwargs):
         instance = super().create(
             rels_dict=get_rels_dict_default(fields=self._get_fields()),
-            ** kwargs,
+            **kwargs,
         )
 
         return instance

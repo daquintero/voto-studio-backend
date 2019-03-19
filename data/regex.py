@@ -338,9 +338,11 @@ def update_rels_dict(model_class, using=settings.STUDIO_DB):
     print('100%')
 
 
-def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB):
-    instances = model_class.objects.using(using).filter(tracked=True)
-    # instances = [model_class.objects.get(id=4572)]
+def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True):
+    instances = model_class.objects \
+        .using(using) \
+        .filter(tracked=True)
+
     if not instances.count():
         raise UpdateError(f"No '{model_class._meta.label}' instances")
     for index, instance in enumerate(instances):
@@ -370,7 +372,7 @@ def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB):
                 rels_dict[field.name] = inner_rels_dict
 
         instance.rels_dict = rels_dict
-        instance.save(using=using)
+        instance.save(using=using, to_index=to_index)
     print('100%')
 
 

@@ -37,7 +37,6 @@ class InfoMixin:
         if not table_descriptors:
             raise AttributeError(f"Please add the 'table_descriptors' field to the model '{self._meta.label}'")
 
-        # TODO: Sort out choice fields
         return {
             'id': self.id,
             'descriptors': [{
@@ -133,7 +132,7 @@ class JSONChoiceField(JSONBaseField):
     type = 'select'
 
     def __init__(self, read_only=False, choices=None):
-        self.choices = choices
+        self.choices = tuple((value, str(label)) for value, label in choices)
         super().__init__(read_only=read_only)
 
 

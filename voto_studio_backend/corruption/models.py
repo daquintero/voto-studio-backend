@@ -108,7 +108,7 @@ class FinancialItem(TrackedWorkshopModel):
         'title',
         'brief_description',
         'amount',
-        'corruption_related',
+        'source',
     )
 
     detail_descriptors = {
