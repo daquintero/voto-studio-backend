@@ -12,6 +12,7 @@ class Command(BaseCommand):
         parser.add_argument('--bypass', action='store', dest='bypass', help='Bypass the confirmation step')
         parser.add_argument('--user', action='store', dest='user', help='Clear instances for only this user')
         parser.add_argument('--committed', action='store', dest='committed', help='Commit state of the instances')
+        parser.add_argument('--to_index', action='store', dest='to_index', help='Should ElasticSearch index this?')
 
     def handle(self, *args, **options):
         user = options.get('user')
@@ -40,7 +41,7 @@ class Command(BaseCommand):
                 if not index % math.ceil(change_count / 10):
                     print(f'{round(index / change_count * 100)}%')
                 try:
-                    change.commit()
+                    change.commit(to_index=options.get('to_index', True))
                 except:
                     print('Skipped', change)
             self.stdout.write(f'Committed {changes.count()} instances.')

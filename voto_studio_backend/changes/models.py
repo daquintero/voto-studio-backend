@@ -262,7 +262,7 @@ class Change(models.Model):
 
         return instance
 
-    def commit(self):
+    def commit(self, to_index=True):
         """
         Commit a change instance and propagate changes through to the main_site database. Will
         create a new instance or update/delete an existing one.
@@ -291,7 +291,7 @@ class Change(models.Model):
                              field.related_model._meta.label == settings.AUTH_USER_MODEL)]
             for fk_field in fk_fields:
                 setattr(instance, f'{fk_field.name}_id', None)
-            instance.save(using=MAIN_SITE_DB)
+            instance.save(using=MAIN_SITE_DB, to_index=to_index)
 
         if self.stage_type == STAGE_DELETED:
             # Do nothing as this action can't

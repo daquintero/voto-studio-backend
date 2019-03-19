@@ -351,7 +351,9 @@ def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB, to_index=
         rels_dict = instance.rels_dict
         for field in model_class.objects._get_fields():
             if field.name not in rels_dict.keys():
-                rels_dict.update({field.name: get_rels_dict_default(field=field)})
+                rels_dict.update({
+                    field.name: get_rels_dict_default(field=field),
+                })
             else:
                 field_type = field.get_internal_type()
                 inner_rels_dict = get_rels_dict_default(field=field)
