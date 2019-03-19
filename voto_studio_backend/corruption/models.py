@@ -106,7 +106,6 @@ class FinancialItem(TrackedWorkshopModel):
 
     table_descriptors = (
         'title',
-        'brief_description',
         'amount',
         'source',
     )
