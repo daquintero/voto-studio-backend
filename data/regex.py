@@ -375,6 +375,10 @@ def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB, to_index=
 
         instance.rels_dict = rels_dict
         instance.save(using=using, to_index=to_index)
+        user = User.objects.get(email='migration@bot.com')
+        request = RequestFactory()
+        request.user = user
+        Change.objects.stage_updated(instance, request)
     print('100%')
 
 
