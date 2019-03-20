@@ -262,7 +262,7 @@ class Change(models.Model):
 
         return instance
 
-    def commit(self, to_index=True):
+    def commit(self, to_index=True, commit_base=False):
         """
         Commit a change instance and propagate changes through to the main_site database. Will
         create a new instance or update/delete an existing one.
@@ -280,7 +280,7 @@ class Change(models.Model):
             # Get the instance that we are going to copy over to the
             # main site database. We need to parse the JSON fields
             # into a format that is more friendly to the main site.
-            instance = self._get_instance(using=STUDIO_DB, base=False)
+            instance = self._get_instance(using=STUDIO_DB, base=commit_base)
             instance = self._parse_json_fields(instance)
             instance.id = self.base_id
             instance.tracked = True
