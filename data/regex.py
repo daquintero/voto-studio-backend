@@ -338,19 +338,20 @@ def update_rels_dict(model_class, using=settings.STUDIO_DB):
     print('100%')
 
 
-def add_new_fields_to_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True):
+def rebuild_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True):
     instances = model_class.objects \
         .using(using) \
         .filter(tracked=True)
 
     if not instances.count():
-        raise UpdateError(f"No '{model_class._meta.label}' instances")
+        print('No instances')
+        return
     for index, instance in enumerate(instances):
         if not index % math.ceil(instances.count() / 10):
             print(f'{round(index / instances.count() * 100)}%')
-        rels_dict = instance.rels_dict
+        rels_dict = {}
         for field in model_class.objects._get_fields():
-            if field.name not in rels_dict.keys():
+            if field.name not in instance.rels_dict.keys():
                 rels_dict.update({
                     field.name: get_rels_dict_default(field=field),
                 })

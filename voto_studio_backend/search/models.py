@@ -65,18 +65,24 @@ class IndexingMixin:
         ret = {}
         for field in fields:
             if field.get_internal_type() == 'JSONField':
-                ret.update({field.name: getattr(self, field.name)})
+                ret.update({
+                    field.name: getattr(self, field.name),
+                })
             else:
                 if len(field.choices):
-                    ret.update({field.name: getattr(self, f'get_{field.name}_display')()})
+                    ret.update({
+                        field.name: getattr(self, f'get_{field.name}_display')(),
+                    })
                 else:
-                    ret.update({field.name: parse_value(field, getattr(self, field.name))})
+                    ret.update({
+                        field.name: parse_value(field, getattr(self, field.name)),
+                    })
 
         if hasattr(self, 'search_method_fields'):
             for method_field_name in self.search_method_fields:
                 try:
                     method_field_value = getattr(self, f'get_{method_field_name}')()
-                except Http404:
+                except (Http404, KeyError):
                     method_field_value = None
                 ret.update({
                     method_field_name: method_field_value,
