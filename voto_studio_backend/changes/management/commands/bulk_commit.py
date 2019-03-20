@@ -47,8 +47,8 @@ class Command(BaseCommand):
                     print(f'{round(index / change_count * 100)}%')
                 try:
                     change.commit(to_index=to_index)
-                except:
-                    print('Skipped', change)
+                except Exception as e:
+                    print('Skipped', change, ' | ', e)
             self.stdout.write(f'Committed {changes.count()} instances.')
         else:
             self.stdout.write('Cancelled.')
