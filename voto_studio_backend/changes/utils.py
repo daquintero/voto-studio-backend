@@ -8,7 +8,7 @@ from voto_studio_backend.users.models import User
 
 
 def migrate_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True, logging=False):
-    # Get all the tracks instances for a given
+    # Get all the tracked instances for a given
     # model class in the specified database.
     instances = model_class.objects \
         .using(using) \
@@ -52,9 +52,9 @@ def migrate_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True, logg
 
         # Update the instance and save it.
         instance.rels_dict = rels_dict
-        instance.save(using=using, to_index=to_index)
+        instance.save(using=using, update_fields=['rels_dict'], to_index=to_index)
 
-        # We need to stage and change, so we fake a request
+        # We need to stage a change, so we fake a request
         # and set the user to the migration bot.
         user = User.objects.get(email='migration@bot.com')
         request = type('Request', (object, ), {})

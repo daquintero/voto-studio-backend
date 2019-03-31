@@ -23,6 +23,7 @@ class InformativeSnippet(TrackedWorkshopModel):
     individuals = models.ManyToManyField('political.Individual', blank=True, related_name=related_name)
     laws = models.ManyToManyField('political.Law', blank=True, related_name=related_name)
     controversies = models.ManyToManyField('political.Controversy', blank=True, related_name=related_name)
+    informative_snippets = models.ManyToManyField('self', blank=True, related_name=related_name)
 
     table_descriptors = (
         'title',

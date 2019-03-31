@@ -240,7 +240,6 @@ API_URL_V1 = 'api/v1'
 WORKSHOP_MODELS = (
     # Corruption
     'corruption.InformativeSnippet',
-    'corruption.CorruptionCase',
     'corruption.FinancialItem',
 
     # Political

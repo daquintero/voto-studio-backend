@@ -774,9 +774,13 @@ class DeleteInstancesAPI(APIView):
         instances = get_list_or_403(model_class, (request.user, 'write'), id__in=instance_ids)
         for instance in instances:
             base_instance = Change.objects.stage_deleted(instance, request)
+            base_instance_id = base_instance.id
             base_instance.delete(using=settings.STUDIO_DB, fake=False)
 
             if instance.published:
+                print(instance.id)
+                instance = get_object_or_404(
+                    instance._meta.model.objects.using(settings.MAIN_SITE_DB), id=base_instance_id)
                 instance.delete(using=settings.MAIN_SITE_DB, fake=False)
 
         response = {
