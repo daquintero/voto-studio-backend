@@ -102,7 +102,6 @@ class FinancialItem(TrackedWorkshopModel):
     title = models.CharField(_('Title'), max_length=64, default=str)
     brief_description = models.CharField(_('Description'), max_length=140, blank=True, null=True)
     amount = models.FloatField(_('Amount'), blank=True, default=float)
-    corruption_related = models.BooleanField(default=False)
 
     table_descriptors = (
         'title',

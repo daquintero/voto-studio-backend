@@ -23,8 +23,9 @@ def migrate_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True, logg
 
     # For each instance rebuild the relationships dictionary.
     for index, instance in enumerate(instances):
+        fields = model_class.objects._get_fields()
         # Leave this iteration early if the rels_dict does not need to change.
-        if instance.rels_dict.keys() == [field.name for field in model_class.objects._get_fields()]:
+        if list(instance.rels_dict.keys()) == [field.name for field in fields]:
             continue
 
         if logging:
@@ -36,7 +37,7 @@ def migrate_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True, logg
         # Start with a deep copy of the instance's relationships dictionary
         # and iterate over each of the model class' fields.
         rels_dict = copy.deepcopy(instance.rels_dict)
-        for field in model_class.objects._get_fields():
+        for field in fields:
             if field.name not in rels_dict.keys():
                 # If the field name is not already included in the
                 # rels_dict then this means it is a new field. So
@@ -46,7 +47,7 @@ def migrate_rels_dict(model_class, using=settings.STUDIO_DB, to_index=True, logg
                 })
 
         for key in instance.rels_dict.keys():
-            if key not in [field.name for field in model_class.objects._get_fields()]:
+            if key not in [field.name for field in fields]:
                 del rels_dict[key]
 
         # Update the instance and save it.

@@ -395,15 +395,12 @@ class BuildFormAPI(APIView):
                 if not (field.get_internal_type() == 'ForeignKey' or
                         field.get_internal_type() == 'OneToOneField'):
                     if not len(field.choices):
-                        if field.name == 'category':
-                            print(field_value)
                         default_values[field.name] = field_value
                     else:
                         default_values[field.name] = {
                             'label': getattr(instance, f'get_{field.name}_display')(),
                             'value': field_value,
                         }
-                        print(getattr(instance, f'get_{field.name}_display')())
                 else:
                     if field_value:
                         default_values[field.name] = {
@@ -741,9 +738,8 @@ class PublishInstancesAPI(APIView):
 
         model_class = get_model(model_label=model_label)
         instance = get_object_or_403(model_class, (request.user, 'commit'), id=instance_ids[0])
-        print(instance)
+
         committed_changes = Change.objects.commit_for_instance(instance)
-        print(committed_changes)
         if not len(committed_changes):
             committed_change = Change.objects \
                 .get_for_instance(instance, committed=True) \

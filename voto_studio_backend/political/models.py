@@ -9,6 +9,7 @@ from voto_studio_backend.changes.models import TrackedWorkshopModel
 from voto_studio_backend.forms.models import (
     JSONModel, JSONAutoField, JSONCharField, JSONTextField, JSONChoiceField,
 )
+from voto_studio_backend.corruption.models import FinancialItem
 from voto_studio_backend.media.models import Image
 
 
@@ -139,8 +140,7 @@ class Individual(TrackedWorkshopModel):
     facebook_username = models.CharField(_('Facebook Username'), max_length=128, default=str)
     instagram_username = models.CharField(_('Instagram Username'), max_length=128, default=str)
     type = models.CharField(_('Type'), choices=INDIVIDUAL_TYPES, max_length=128, blank=True, null=True)
-    corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
-    non_corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
+    related_funds = models.FloatField(blank=True, null=True, default=float)
     experience = JSONField(default=Experience(), blank=True, null=True)
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
@@ -192,6 +192,7 @@ class Individual(TrackedWorkshopModel):
 
     search_method_fields = (
         'campaigns',
+        'related_funds',
     )
 
     def get_campaigns(self):
@@ -199,13 +200,24 @@ class Individual(TrackedWorkshopModel):
 
         response = []
         for campaign in campaigns:
-
             response.append({
                 'type': campaign.get_type_display(),
                 'reelection': campaign.reelection,
             })
 
         return response
+
+    def get_related_funds(self):
+        instance = get_object_or_404(self._meta.model.objects.using(settings.MAIN_SITE_DB), id=self.id)
+        financial_items = FinancialItem.objects \
+            .using(settings.MAIN_SITE_DB) \
+            .filter(id__in=instance.rels_dict['financial_items']['rels'])
+
+        total = 0
+        for financial_item in financial_items:
+            total += financial_item.amount
+
+        return total
 
 
 class Campaign(TrackedWorkshopModel):
@@ -259,8 +271,7 @@ class Organization(TrackedWorkshopModel):
     facebook_username = models.CharField(_('Facebook Username'), max_length=128, default=str)
     instagram_username = models.CharField(_('Instagram Username'), max_length=128, default=str)
     type = models.CharField(_('Type'), choices=ORGANIZATION_TYPES, max_length=128, blank=True, null=True)
-    corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
-    non_corruption_related_funds = models.FloatField(blank=True, null=True, default=float)
+    related_funds = models.FloatField(blank=True, null=True, default=float)
 
     financial_items = models.ManyToManyField('corruption.FinancialItem', blank=True, related_name=related_name)
     organizations = models.ManyToManyField('self', blank=True, related_name=related_name)
@@ -294,6 +305,8 @@ class Organization(TrackedWorkshopModel):
         'related': (),
     }
 
+    hidden_fields = hidden_fields(fields_tuple=('source',))
+
     search_fields = (
         'name',
         'alias',
@@ -303,7 +316,23 @@ class Organization(TrackedWorkshopModel):
         'user__email',
     )
 
-    hidden_fields = hidden_fields(fields_tuple=('source',))
+    search_method_fields = (
+        'related_funds',
+    )
+
+    def get_related_funds(self):
+        instance = get_object_or_404(self._meta.model.objects.using(settings.MAIN_SITE_DB), id=self.id)
+        financial_items = FinancialItem.objects \
+            .using(settings.MAIN_SITE_DB) \
+            .filter(id__in=instance.rels_dict['financial_items']['rels'])
+
+        print(instance)
+
+        total = 0
+        for financial_item in financial_items:
+            total += financial_item.amount
+
+        return total
 
 
 class Promise(TrackedWorkshopModel):
