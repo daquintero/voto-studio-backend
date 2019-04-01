@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.db.models.fields.related import OneToOneRel, ManyToOneRel, ManyToManyRel
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import authentication, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.views import APIView
@@ -250,6 +251,15 @@ def is_read_only(field):
     return field.name in getattr(field.model, 'read_only_fields', ())
 
 
+DEFAULT_VALUES = {
+    'FloatField': 0,
+    'IntegerField': 0,
+    'CharField': '',
+    'TextField': '',
+    'DateTimeField': timezone.now(),
+}
+
+
 def parse_value(field, value):
     """
     The HTML input will always return a string, even if the type of the field is "number".
@@ -257,8 +267,15 @@ def parse_value(field, value):
     """
     field_type = field.get_internal_type()
 
+    if value is None:
+        try:
+            return DEFAULT_VALUES[field_type]
+        except KeyError:
+            return None
+
     if field_type == 'FloatField':
         return float(value)
+
     if field_type == 'IntegerField':
         return int(value)
 
