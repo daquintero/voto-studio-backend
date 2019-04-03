@@ -23,7 +23,8 @@ if bonsai:
         host=host,
         port=443,
         use_ssl=True,
-        http_auth=(auth[0], auth[1])
+        http_auth=(auth[0], auth[1]),
+        timeout=30,
     )
 else:
     client = create_connection()
