@@ -78,4 +78,6 @@ class BasicModel(TrackedWorkshopModel):
         'related': (),
     }
 
+    search_autocomplete_field = 'char_field'
+
     hidden_fields = hidden_fields(fields_tuple=('order', 'views', 'location', 'location_id_name', 'location_id',))
