@@ -336,6 +336,7 @@ class Organization(TrackedWorkshopModel):
 
     search_boost_fields = (
         'name',
+        'alias',
     )
 
     search_method_fields = (
