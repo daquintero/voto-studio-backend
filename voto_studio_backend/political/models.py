@@ -112,9 +112,14 @@ class Law(TrackedWorkshopModel):
     )
 
     search_fields = (
+        'id',
         'brief_description',
         'category',
         'user__email',
+    )
+
+    search_boost_fields = (
+        ''
     )
 
     search_autocomplete_field = 'brief_description'
@@ -182,6 +187,7 @@ class Individual(TrackedWorkshopModel):
     )
 
     search_fields = (
+        'id',
         'name',
         'alias',
         'brief_description',
@@ -190,7 +196,9 @@ class Individual(TrackedWorkshopModel):
         'user__email',
     )
 
-    hidden_fields = hidden_fields(fields_tuple=('source',))
+    search_boost_fields = (
+        'name',
+    )
 
     search_method_fields = (
         'campaigns',
@@ -198,6 +206,8 @@ class Individual(TrackedWorkshopModel):
     )
 
     search_autocomplete_field = 'name'
+
+    hidden_fields = hidden_fields(fields_tuple=('source',))
 
     def get_campaigns(self):
         campaigns = get_list_or_404(Campaign, id__in=self.rels_dict['campaigns']['rels'])
@@ -251,6 +261,7 @@ class Campaign(TrackedWorkshopModel):
     }
 
     search_fields = (
+        'id',
         'type'
         'brief_description',
         'long_description',
@@ -314,12 +325,17 @@ class Organization(TrackedWorkshopModel):
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
     search_fields = (
+        'id',
         'name',
         'alias',
         'brief_description',
         'email',
         'type',
         'user__email',
+    )
+
+    search_boost_fields = (
+        'name',
     )
 
     search_method_fields = (
@@ -364,6 +380,7 @@ class Promise(TrackedWorkshopModel):
     }
 
     search_fields = (
+        'id',
         'brief_description',
         'type',
         'user__email',
@@ -415,6 +432,7 @@ class Achievement(TrackedWorkshopModel):
     }
 
     search_fields = (
+        'id',
         'brief_description',
         'type',
         'user__email',
@@ -466,6 +484,7 @@ class Controversy(TrackedWorkshopModel):
     }
 
     search_fields = (
+        'id',
         'brief_description',
         'type',
         'user__email',

@@ -1,14 +1,12 @@
 import re
 from itertools import permutations
-from types import MethodType
 
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import FieldError
-from django.shortcuts import get_object_or_404
 from elasticsearch.helpers import bulk
 from elasticsearch_dsl import (
-    Document, Index, Text, Date, Boolean, Integer, Long, Nested, Completion, analyzer, token_filter,
+    Document, Index, Text, Date, Boolean, Integer, Long, Nested, Completion, analyzer, token_filter, Keyword,
 )
 from elasticsearch_dsl.connections import create_connection
 
@@ -106,6 +104,16 @@ def clean(self):
         }
 
 
+def get_field(model_label, field):
+    model_class = get_model(model_label=model_label)
+    field_type = field.get_internal_type()
+
+    if field.name in getattr(model_class, 'search_boost_fields', ()):
+        return FIELD_MAP[field_type](fields={'raw': Keyword()}, boost=10)
+    else:
+        return FIELD_MAP[field_type]()
+
+
 def create_document_class(model_label, using=settings.STUDIO_DB):
     """
     Dynamically create an index class for a model we want to enable search on.
@@ -118,7 +126,7 @@ def create_document_class(model_label, using=settings.STUDIO_DB):
 
     fields = [field for field in get_fields(model_label=model_label) if field.name not in excluded_fields]
     attr_dict = {
-        f.name: FIELD_MAP[f.get_internal_type()]() for f in fields
+        field.name: get_field(model_label, field) for field in fields
     }
     attr_dict.update({
         'model_label': model_label,
