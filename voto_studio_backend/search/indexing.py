@@ -1,10 +1,15 @@
 import re
+from itertools import permutations
+from types import MethodType
 
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import FieldError
+from django.shortcuts import get_object_or_404
 from elasticsearch.helpers import bulk
-from elasticsearch_dsl import Document, Index, Text, Date, Boolean, Integer, Long, Nested
+from elasticsearch_dsl import (
+    Document, Index, Text, Date, Boolean, Integer, Long, Nested, Completion, analyzer, token_filter,
+)
 from elasticsearch_dsl.connections import create_connection
 
 from shared.utils import get_model
@@ -71,12 +76,55 @@ def check_index_exists(index_name=None, model_label=None, using=settings.STUDIO_
     ))
 
 
+ascii_fold = analyzer(
+    'ascii_fold',
+    tokenizer='whitespace',
+    filter=[
+        'lowercase',
+        token_filter('ascii_fold', 'asciifolding'),
+    ],
+)
+
+
+def clean(self):
+    """
+    Automatically construct the suggestion input and weight by taking all
+    possible permutation of the instance's ``search_autocomplete_field``
+    as ``input`` and taking 1 as ``weight`` (TODO: Improve weighting).
+    """
+    model_class = get_model(self.model_label)
+    field_value = getattr(self, model_class.search_autocomplete_field, '')
+    if field_value is not None:
+        self.suggest = {
+            'input': [' '.join(p) for p in permutations(field_value.split(), r=2)],
+            'weight': 1,
+        }
+    else:
+        self.suggest = {
+            'input': [],
+            'weight': 0,
+        }
+
+
 def create_document_class(model_label, using=settings.STUDIO_DB):
     """
     Dynamically create an index class for a model we want to enable search on.
     """
-    fields = get_fields(model_label=model_label)
-    attr_dict = {f.name: FIELD_MAP[f.get_internal_type()] for f in fields}
+    excluded_fields = (
+        'password',
+        'permissions_dict',
+        'order',
+    )
+
+    fields = [field for field in get_fields(model_label=model_label) if field.name not in excluded_fields]
+    attr_dict = {
+        f.name: FIELD_MAP[f.get_internal_type()]() for f in fields
+    }
+    attr_dict.update({
+        'model_label': model_label,
+        'clean': clean,
+        'suggest': Completion(analyzer=ascii_fold),
+    })
     document_class = type(model_label.split('.')[1], (Document,), attr_dict)
     index_class = type('Index', (object,), {'name': build_index_name(model_label, using=using)})
     setattr(document_class, 'Index', index_class)

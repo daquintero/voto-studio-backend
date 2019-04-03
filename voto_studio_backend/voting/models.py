@@ -36,4 +36,6 @@ class Tutorial(TrackedWorkshopModel):
         'body',
     )
 
+    search_autocomplete_field = 'title'
+
     hidden_fields = hidden_fields(fields_tuple=('location', 'date', 'source', 'statistics'))

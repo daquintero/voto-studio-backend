@@ -50,6 +50,8 @@ class InformativeSnippet(TrackedWorkshopModel):
         'user__email',
     )
 
+    search_autocomplete_field = 'title'
+
 
 class CorruptionCase(TrackedWorkshopModel):
     """
@@ -91,6 +93,8 @@ class CorruptionCase(TrackedWorkshopModel):
         'user__email',
     )
 
+    search_autocomplete_field = 'title'
+
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
 
@@ -130,3 +134,5 @@ class FinancialItem(TrackedWorkshopModel):
     search_method_fields = (
         'table_values',
     )
+
+    search_autocomplete_field = 'title'

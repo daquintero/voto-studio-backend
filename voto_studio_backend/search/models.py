@@ -1,8 +1,10 @@
+from itertools import permutations
+
 from django.conf import settings
 from django.db import models
 from django.http import Http404
 from elasticsearch.exceptions import NotFoundError
-from elasticsearch_dsl import Search, Q
+from elasticsearch_dsl import Search, Q, Completion
 
 from .indexing import build_index_name, get_document_class
 from .utils import get_fields
@@ -107,6 +109,25 @@ class IndexingMixin:
             return user.id
         return None
 
+    def get_suggest(self):
+        search_autocomplete_field = self.search_autocomplete_field
+        search_autocomplete_value = getattr(self, search_autocomplete_field, '')
+        if search_autocomplete_value is not None:
+            return {
+                # 'input': [
+                #     ' '.join(p) for p in permutations(search_autocomplete_value.split(), r=2)
+                # ],
+                'input': [
+                    search_autocomplete_value,
+                ],
+                'weight': 0.5,
+            }
+        else:
+            return {
+                'input': [],
+                'weight': 0,
+            }
+
     def create_document(self, using=settings.STUDIO_DB):
         model_label = self._meta.label
         obj = get_document_class(model_label, using=using)(
@@ -115,6 +136,7 @@ class IndexingMixin:
             size='full',
             user=self.get_user(),
             media=self.get_media(),
+            suggest=self.get_suggest(),
             **self.get_kwargs(),
         )
         obj.save(index=build_index_name(model_label=model_label, using=using))
@@ -128,6 +150,7 @@ class IndexingMixin:
         document.update(
             user=self.get_user(),
             media=self.get_media(),
+            suggest=self.get_suggest(),
             **self.get_kwargs(),
         )
 

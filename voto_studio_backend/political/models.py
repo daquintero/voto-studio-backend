@@ -117,6 +117,8 @@ class Law(TrackedWorkshopModel):
         'user__email',
     )
 
+    search_autocomplete_field = 'brief_description'
+
 
 class Experience(JSONModel):
     id = JSONAutoField(unique=True)
@@ -195,6 +197,8 @@ class Individual(TrackedWorkshopModel):
         'related_funds',
     )
 
+    search_autocomplete_field = 'name'
+
     def get_campaigns(self):
         campaigns = get_list_or_404(Campaign, id__in=self.rels_dict['campaigns']['rels'])
 
@@ -253,6 +257,8 @@ class Campaign(TrackedWorkshopModel):
         'reelection'
         'user__email',
     )
+
+    search_autocomplete_field = 'brief_description'
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
@@ -320,13 +326,13 @@ class Organization(TrackedWorkshopModel):
         'related_funds',
     )
 
+    search_autocomplete_field = 'name'
+
     def get_related_funds(self):
         instance = get_object_or_404(self._meta.model.objects.using(settings.MAIN_SITE_DB), id=self.id)
         financial_items = FinancialItem.objects \
             .using(settings.MAIN_SITE_DB) \
             .filter(id__in=instance.rels_dict['financial_items']['rels'])
-
-        print(instance)
 
         total = 0
         for financial_item in financial_items:
@@ -366,6 +372,8 @@ class Promise(TrackedWorkshopModel):
     search_method_fields = (
         'individuals',
     )
+
+    search_autocomplete_field = 'title'
 
     def get_individuals(self):
         individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
@@ -416,6 +424,8 @@ class Achievement(TrackedWorkshopModel):
         'individuals',
     )
 
+    search_autocomplete_field = 'title'
+
     def get_individuals(self):
         individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
 
@@ -465,8 +475,7 @@ class Controversy(TrackedWorkshopModel):
         'individuals',
     )
 
-    class Meta:
-        verbose_name_plural = 'Controversies'
+    search_autocomplete_field = 'title'
 
     def get_individuals(self):
         individuals = get_list_or_404(Individual, id__in=self.rels_dict['individuals']['rels'])
@@ -486,3 +495,6 @@ class Controversy(TrackedWorkshopModel):
             })
 
         return response
+
+    class Meta:
+        verbose_name_plural = 'Controversies'
