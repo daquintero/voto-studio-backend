@@ -136,7 +136,7 @@ class IndexingMixin:
             size='full',
             user=self.get_user(),
             media=self.get_media(),
-            suggest=self.get_suggest(),
+            # suggest=self.get_suggest(),
             **self.get_kwargs(),
         )
         obj.save(index=build_index_name(model_label=model_label, using=using))
@@ -150,7 +150,7 @@ class IndexingMixin:
         document.update(
             user=self.get_user(),
             media=self.get_media(),
-            suggest=self.get_suggest(),
+            # suggest=self.get_suggest(),
             **self.get_kwargs(),
         )
 

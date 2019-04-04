@@ -95,7 +95,7 @@ def clean(self):
     field_value = getattr(self, model_class.search_autocomplete_field, '')
     if field_value is not None:
         self.suggest = {
-            'input': [' '.join(p) for p in permutations(field_value.split(), r=2)],
+            'input': [field_value],
             'weight': 1,
         }
     else:
@@ -109,10 +109,19 @@ def get_field(model_label, field):
     model_class = get_model(model_label=model_label)
     field_type = field.get_internal_type()
 
+    field_kwargs = {}
     if field.name in getattr(model_class, 'search_boost_fields', ()):
-        return FIELD_MAP[field_type](fields={'raw': Keyword()}, boost=10)
-    else:
-        return FIELD_MAP[field_type]()
+        field_kwargs.update({
+            'boost': 10,
+        })
+    if field.name in getattr(model_class, 'search_keyword_fields', ()):
+        field_kwargs.update({
+            'fields': {
+                'raw': Keyword(),
+            },
+        })
+
+    return FIELD_MAP[field_type](**field_kwargs)
 
 
 def create_document_class(model_label, using=settings.STUDIO_DB):

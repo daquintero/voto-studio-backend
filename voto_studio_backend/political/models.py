@@ -1,3 +1,5 @@
+from itertools import permutations
+
 from django.conf import settings
 from django.contrib.postgres.fields import JSONField
 from django.db import models
@@ -187,7 +189,6 @@ class Individual(TrackedWorkshopModel):
     )
 
     search_fields = (
-        'id',
         'name',
         'alias',
         'brief_description',
@@ -200,6 +201,10 @@ class Individual(TrackedWorkshopModel):
         'name',
     )
 
+    search_keyword_fields = (
+        'name',
+    )
+
     search_method_fields = (
         'campaigns',
         'related_funds',
@@ -208,6 +213,10 @@ class Individual(TrackedWorkshopModel):
     search_autocomplete_field = 'name'
 
     hidden_fields = hidden_fields(fields_tuple=('source',))
+
+    def get_autocomplete_input(self):
+        search_autocomplete_value = getattr(self, self.search_autocomplete_field, '')
+        return [' '.join(p) for p in permutations(search_autocomplete_value.split())]
 
     def get_campaigns(self):
         campaigns = get_list_or_404(Campaign, id__in=self.rels_dict['campaigns']['rels'])
@@ -247,7 +256,7 @@ class Campaign(TrackedWorkshopModel):
     table_descriptors = (
         'type',
         'brief_description',
-        'reelection'
+        'reelection',
     )
 
     detail_descriptors = {
@@ -255,14 +264,13 @@ class Campaign(TrackedWorkshopModel):
             'type'
             'brief_description',
             'long_description',
-            'reelection'
+            'reelection',
         ),
         'related': (),
     }
 
     search_fields = (
-        'id',
-        'type'
+        'type',
         'brief_description',
         'long_description',
         'reelection'
@@ -325,7 +333,6 @@ class Organization(TrackedWorkshopModel):
     hidden_fields = hidden_fields(fields_tuple=('source',))
 
     search_fields = (
-        'id',
         'name',
         'alias',
         'brief_description',
@@ -381,7 +388,6 @@ class Promise(TrackedWorkshopModel):
     }
 
     search_fields = (
-        'id',
         'brief_description',
         'type',
         'user__email',
@@ -433,7 +439,6 @@ class Achievement(TrackedWorkshopModel):
     }
 
     search_fields = (
-        'id',
         'brief_description',
         'type',
         'user__email',
@@ -485,7 +490,6 @@ class Controversy(TrackedWorkshopModel):
     }
 
     search_fields = (
-        'id',
         'brief_description',
         'type',
         'user__email',
