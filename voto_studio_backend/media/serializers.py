@@ -57,6 +57,7 @@ class ResourceSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'url',
+            'link',
             'model_label',
         )
 
